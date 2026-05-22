@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      ravendb:
+        image: ravendb/ravendb:7.2-latest
+        ports:
+          - 8080:8080
+        env:
+          RAVEN_ServerUrl: http://0.0.0.0:8080
+          RAVEN_Setup_Mode: None
+          RAVEN_Security_UnsecuredAccessAllowed: PublicNetwork
+          RAVEN_License_Eula_Accepted: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Wait for RavenDB
+        run: |
+          for i in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8080/setup/alive > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Test
+        run: dotnet test RavenDB.Mcp.slnx --configuration Release
+        env:
+          RAVENDB_TEST_URL: http://127.0.0.1:8080/
