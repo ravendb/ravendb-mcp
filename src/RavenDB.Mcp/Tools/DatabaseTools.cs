@@ -23,8 +23,74 @@ public static class DatabaseTools
     {
         return client.GetDatabaseRecord(databaseName, cancellationToken);
     }
+
+    [McpServerTool(Name = "get_database_stats", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetDatabaseStatsResult> GetDatabaseStats(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetDatabaseStats(databaseName, cancellationToken);
+    }
+
+    [McpServerTool(Name = "get_detailed_database_stats", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetDetailedDatabaseStatsResult> GetDetailedDatabaseStats(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetDetailedDatabaseStats(databaseName, cancellationToken);
+    }
+
+    [McpServerTool(Name = "get_collection_stats", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetCollectionStatsResult> GetCollectionStats(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetCollectionStats(databaseName, cancellationToken);
+    }
+
+    [McpServerTool(Name = "get_detailed_collection_stats", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetDetailedCollectionStatsResult> GetDetailedCollectionStats(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetDetailedCollectionStats(databaseName, cancellationToken);
+    }
+
+    [McpServerTool(Name = "get_database_configuration", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetDatabaseConfigurationResult> GetDatabaseConfiguration(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetDatabaseConfiguration(databaseName, cancellationToken);
+    }
+
+    [McpServerTool(Name = "get_client_configuration", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetClientConfigurationResult> GetClientConfiguration(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetClientConfiguration(databaseName, cancellationToken);
+    }
 }
 
 public sealed record ListDatabasesResult(string[] Databases);
 
 public sealed record GetDatabaseRecordResult(string DatabaseName, JsonElement Record);
+
+public sealed record GetDatabaseStatsResult(string DatabaseName, JsonElement Stats);
+
+public sealed record GetDetailedDatabaseStatsResult(string DatabaseName, JsonElement Stats);
+
+public sealed record GetCollectionStatsResult(string DatabaseName, JsonElement Stats);
+
+public sealed record GetDetailedCollectionStatsResult(string DatabaseName, JsonElement Stats);
+
+public sealed record GetDatabaseConfigurationResult(string DatabaseName, JsonElement Configuration);
+
+public sealed record GetClientConfigurationResult(string DatabaseName, JsonElement Configuration);

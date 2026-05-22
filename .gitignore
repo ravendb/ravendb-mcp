@@ -4,4 +4,6 @@ obj/
 .vs/
 .vscode/
 
+docs/
+
 *.user

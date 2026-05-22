@@ -1,7 +1,9 @@
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using Raven.Client.Documents;
 using RavenDB.Mcp.Configuration;
@@ -32,6 +34,17 @@ builder.Services.AddSingleton<RavenDbAdminClient>();
 builder.Services
     .AddMcpServer()
     .WithStdioServerTransport()
+    .WithMessageFilters(filters => filters.AddIncomingFilter(next => async (context, cancellationToken) =>
+    {
+        if (context.JsonRpcMessage is JsonRpcNotification { Method: NotificationMethods.CancelledNotification, Params: { } parameters })
+        {
+            var cancelled = parameters.Deserialize<CancelledNotificationParams>();
+            var logger = context.Services?.GetService<ILoggerFactory>()?.CreateLogger("RavenDB.Mcp.Cancellation");
+            logger?.LogInformation("MCP request {RequestId} cancelled. Reason: {Reason}", cancelled?.RequestId, cancelled?.Reason);
+        }
+
+        await next(context, cancellationToken);
+    }))
     .WithToolsFromAssembly();
 
 await builder.Build().RunAsync();

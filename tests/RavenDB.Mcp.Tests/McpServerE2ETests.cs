@@ -25,6 +25,13 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
         Assert.Contains("get_server_info", toolNames);
         Assert.Contains("list_databases", toolNames);
         Assert.Contains("get_database_record", toolNames);
+        Assert.Contains("get_cluster_topology", toolNames);
+        Assert.Contains("get_database_stats", toolNames);
+        Assert.Contains("list_indexes", toolNames);
+        Assert.Contains("list_running_operations", toolNames);
+        Assert.Contains("get_replication_active_connections", toolNames);
+        Assert.Contains("list_ongoing_tasks", toolNames);
+        Assert.Contains("get_database_tcp_info", toolNames);
 
         using var serverInfo = await client.CallTool("get_server_info", null, timeout.Token);
         Assert.Equal("7.2", serverInfo.RootElement.GetProperty("productVersion").GetString());
@@ -42,6 +49,33 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
         Assert.Equal(
             fixture.DatabaseName,
             databaseRecord.RootElement.GetProperty("databaseName").GetString());
+
+        using var topology = await client.CallTool("get_cluster_topology", null, timeout.Token);
+        Assert.Equal(JsonValueKind.Object, topology.RootElement.GetProperty("topology").ValueKind);
+
+        using var stats = await client.CallTool(
+            "get_database_stats",
+            new { databaseName = fixture.DatabaseName },
+            timeout.Token);
+        Assert.Equal(fixture.DatabaseName, stats.RootElement.GetProperty("databaseName").GetString());
+
+        using var indexes = await client.CallTool(
+            "list_indexes",
+            new { databaseName = fixture.DatabaseName },
+            timeout.Token);
+        Assert.Equal(JsonValueKind.Array, indexes.RootElement.GetProperty("indexes").ValueKind);
+
+        using var operations = await client.CallTool(
+            "list_running_operations",
+            new { databaseName = fixture.DatabaseName },
+            timeout.Token);
+        Assert.Equal(JsonValueKind.Object, operations.RootElement.GetProperty("operations").ValueKind);
+
+        using var replication = await client.CallTool(
+            "get_replication_active_connections",
+            new { databaseName = fixture.DatabaseName },
+            timeout.Token);
+        Assert.Equal(JsonValueKind.Object, replication.RootElement.GetProperty("connections").ValueKind);
     }
 }
 
