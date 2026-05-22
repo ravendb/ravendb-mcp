@@ -6,14 +6,14 @@ Beta should expand the read-only diagnostics surface without changing the basic 
 
 ## Current Wire-State Findings
 
-- [ ] Decide whether SDK-advertised `logging`, `tools.listChanged`, and task-optional execution are acceptable defaults or should be suppressed/configured before Beta.
-- [ ] Fix `get_database_record` output shape. Current direct serialization exposes only `etag` and `isSharded` inside `record`, which is not enough to be a useful database-record tool.
-- [ ] Keep `tools/list` metadata lean: snake_case names, read-only annotations, structured output schemas, and descriptions only when a name is genuinely unclear.
+- [x] Reviewed SDK-advertised `logging`, `tools.listChanged`, and task-optional execution. Accept SDK defaults for v1 unless they cause client-visible behavior problems.
+- [x] Fix `get_database_record` output shape. Current direct serialization exposes only `etag` and `isSharded` inside `record`, which is not enough to be a useful database-record tool.
+- [x] Keep `tools/list` metadata lean: snake_case names, read-only annotations, structured output schemas, and descriptions only when a name is genuinely unclear.
 
 ## Beta Foundations
 
 - [ ] Keep all Beta tools read-only by construction.
-- [ ] Keep tool outputs domain-shaped. Prefer RavenDB Client objects or small records over generic JSON wrappers.
+- [ ] Keep tool outputs domain-shaped. Use small records for stable summaries; use permissive JSON only for raw/native RavenDB payloads where expanding the schema would hurt `tools/list` or context size.
 - [ ] Establish a simple output convention for common fields: database name, node tag, etag, status, errors, timestamps, and durations.
 - [ ] Establish clear permission/configuration failure behavior for missing database, inaccessible database, invalid certificate, and insufficient certificate clearance.
 - [ ] Add MCP tool-call logging through normal server logs, not stdout.
