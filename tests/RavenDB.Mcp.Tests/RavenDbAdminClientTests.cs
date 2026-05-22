@@ -23,6 +23,6 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
             timeout.Token);
 
         Assert.Equal(fixture.DatabaseName, databaseRecord.DatabaseName);
-        Assert.Equal(fixture.DatabaseName, databaseRecord.Record.DatabaseName);
+        Assert.Equal(fixture.DatabaseName, databaseRecord.Record.GetProperty("DatabaseName").GetString());
     }
 }

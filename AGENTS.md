@@ -19,3 +19,15 @@ The code should be demo-shallow and professional: direct enough to show the mech
 - Make failure explicit at the boundary. A clear setup error is better than a hidden fallback that changes behavior depending on the machine.
 - Use framework mechanics where they protect the actual protocol or runtime. For example, stdio MCP must keep logs off stdout, so console logs should go to stderr.
 - Every line should answer: what current problem does this solve? If the answer is only "maybe later", cut it or move the thought to docs.
+
+## MCP Tool Contract Defaults
+
+- Tool schemas are agent-facing API contracts. Keep them small, stable, and readable in `tools/list`.
+- Treat schema size and result size as context-window costs. Large contracts and large payloads reduce how much useful diagnostic state the agent can keep.
+- Use precise records for stable summaries and normal diagnostic results.
+- Do not expose large RavenDB Client object graphs as fully expanded MCP schemas.
+- For raw RavenDB payloads, prefer a permissive JSON field such as `JsonElement` over copying the whole RavenDB type into our own contract.
+- If a RavenDB Client type does not serialize usefully through the MCP/System.Text.Json path, fix it at the narrow tool-result boundary. Do not change global serializer behavior for one tool.
+- Split summary and raw detail when the raw shape is large or unstable.
+- Large artifacts such as logs, debug packages, dumps, traces, and long query results should move through resource links or files when that feature exists, not giant tool schemas.
+- Keep `tools/list` metadata lean: snake_case names, read-only annotations, structured output schemas, and descriptions only when a name is genuinely unclear.

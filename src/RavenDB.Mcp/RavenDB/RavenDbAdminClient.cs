@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Raven.Client.Documents;
 using Raven.Client.ServerWide.Operations;
 using RavenDB.Mcp.Tools;
@@ -6,6 +7,11 @@ namespace RavenDB.Mcp.RavenDB;
 
 public sealed class RavenDbAdminClient(IDocumentStore store)
 {
+    private static readonly JsonSerializerOptions DatabaseRecordJsonOptions = new()
+    {
+        IncludeFields = true
+    };
+
     public async Task<ListDatabasesResult> ListDatabases(CancellationToken cancellationToken)
     {
         var databaseNames = await store.Maintenance.Server.SendAsync(
@@ -29,7 +35,10 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
         if (record is null)
             throw new InvalidOperationException($"Database '{databaseName}' was not found.");
 
-        return new GetDatabaseRecordResult(databaseName, record);
+        return new GetDatabaseRecordResult(
+            databaseName,
+            // DatabaseRecord keeps most payload data in fields, so enable field serialization only here.
+            JsonSerializer.SerializeToElement(record, DatabaseRecordJsonOptions));
     }
 
     public async Task<GetServerInfoResult> GetServerInfo(CancellationToken cancellationToken)

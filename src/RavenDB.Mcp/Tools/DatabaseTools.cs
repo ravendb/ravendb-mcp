@@ -1,4 +1,4 @@
-using Raven.Client.ServerWide;
+using System.Text.Json;
 using ModelContextProtocol.Server;
 using RavenDB.Mcp.RavenDB;
 
@@ -27,4 +27,4 @@ public static class DatabaseTools
 
 public sealed record ListDatabasesResult(string[] Databases);
 
-public sealed record GetDatabaseRecordResult(string DatabaseName, DatabaseRecordWithEtag Record);
+public sealed record GetDatabaseRecordResult(string DatabaseName, JsonElement Record);
