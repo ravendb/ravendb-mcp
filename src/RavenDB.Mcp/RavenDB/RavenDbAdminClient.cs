@@ -1,25 +1,37 @@
-using System.Net.Http;
 using System.Text.Json;
+using System.Text;
+using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Operations;
+using Raven.Client.Documents.Operations.Backups;
+using Raven.Client.Documents.Operations.Configuration;
+using Raven.Client.Documents.Operations.Identities;
 using Raven.Client.Documents.Operations.Indexes;
+using Raven.Client.Documents.Operations.OngoingTasks;
+using Raven.Client.Documents.Operations.Replication;
 using Raven.Client.Http;
 using Raven.Client.ServerWide.Commands;
 using Raven.Client.ServerWide.Operations;
 using Raven.Client.ServerWide.Operations.Configuration;
 using Raven.Client.ServerWide.Operations.Logs;
+using RavenDB.Mcp.Configuration;
 using RavenDB.Mcp.Tools;
 using Sparrow.Json;
 
 namespace RavenDB.Mcp.RavenDB;
 
-public sealed class RavenDbAdminClient(IDocumentStore store)
+public sealed class RavenDbAdminClient(
+    IDocumentStore store,
+    IOptions<RavenDbOptions>? options = null)
 {
     private static readonly JsonSerializerOptions RavenDbJsonOptions = new()
     {
         IncludeFields = true
     };
+
+    private readonly HttpClient http = CreateHttpClient(options?.Value);
+    private readonly string serverUrl = (options?.Value.Urls.FirstOrDefault() ?? store.Urls.First()).TrimEnd('/');
 
     public async Task<ListDatabasesResult> ListDatabases(CancellationToken cancellationToken)
     {
@@ -34,20 +46,9 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
         string databaseName,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(databaseName))
-            throw new ArgumentException("Database name is required.", nameof(databaseName));
-
-        var record = await store.Maintenance.Server.SendAsync(
-            new GetDatabaseRecordOperation(databaseName),
-            cancellationToken);
-
-        if (record is null)
-            throw new InvalidOperationException($"Database '{databaseName}' was not found.");
-
         return new GetDatabaseRecordResult(
             databaseName,
-            // DatabaseRecord keeps most payload data in fields.
-            ToJson(record));
+            await GetDatabaseRecordJson(databaseName, cancellationToken));
     }
 
     public async Task<GetServerInfoResult> GetServerInfo(CancellationToken cancellationToken)
@@ -55,12 +56,14 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
         var buildNumber = await store.Maintenance.Server.SendAsync(
             new GetBuildNumberOperation(),
             cancellationToken);
+        var nodeInfo = await ExecuteServerCommand(new GetNodeInfoCommand(), cancellationToken);
 
         return new GetServerInfoResult(
             buildNumber.ProductVersion,
             buildNumber.BuildVersion,
             buildNumber.CommitHash,
-            buildNumber.FullVersion);
+            buildNumber.FullVersion,
+            ToJson(nodeInfo));
     }
 
     public async Task<GetClusterTopologyResult> GetClusterTopology(CancellationToken cancellationToken)
@@ -69,30 +72,10 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
         return new GetClusterTopologyResult(ToJson(topology));
     }
 
-    public async Task<GetNodeInfoResult> GetNodeInfo(CancellationToken cancellationToken)
-    {
-        var nodeInfo = await ExecuteServerCommand(new GetNodeInfoCommand(), cancellationToken);
-        return new GetNodeInfoResult(ToJson(nodeInfo));
-    }
-
     public async Task<GetNodeStatusResult> GetNodeStatus(CancellationToken cancellationToken)
     {
-        return new GetNodeStatusResult(await GetServerJson("/admin/stats", cancellationToken));
-    }
-
-    public async Task<GetServerMetricsResult> GetServerMetrics(CancellationToken cancellationToken)
-    {
-        return new GetServerMetricsResult(await GetServerJson("/admin/metrics", cancellationToken));
-    }
-
-    public async Task<GetServerConfigurationResult> GetServerConfiguration(CancellationToken cancellationToken)
-    {
-        return new GetServerConfigurationResult(await GetServerJson("/admin/configuration/settings", cancellationToken));
-    }
-
-    public async Task<GetStudioConfigurationResult> GetStudioConfiguration(CancellationToken cancellationToken)
-    {
-        return new GetStudioConfigurationResult(await GetServerJson("/configuration/studio", cancellationToken));
+        var topology = await ExecuteServerCommand(new GetClusterTopologyCommand(), cancellationToken);
+        return new GetNodeStatusResult(ToJson(topology));
     }
 
     public async Task<GetLogsConfigurationToolResult> GetLogsConfiguration(CancellationToken cancellationToken)
@@ -149,6 +132,25 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
         return new GetDetailedCollectionStatsResult(databaseName, ToJson(stats));
     }
 
+    public async Task<GetDatabaseHealthSummaryResult> GetDatabaseHealthSummary(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        var stats = await GetDatabaseStats(databaseName, cancellationToken);
+        var indexingStatus = await GetIndexingStatus(databaseName, cancellationToken);
+        var indexStats = await GetIndexStats(databaseName, cancellationToken);
+        var indexErrors = await GetIndexErrors(databaseName, cancellationToken);
+        var tasks = await ListOngoingTasks(databaseName, cancellationToken);
+
+        return new GetDatabaseHealthSummaryResult(
+            databaseName,
+            stats.Stats,
+            indexingStatus.Status,
+            indexStats.Stats,
+            indexErrors.Errors,
+            tasks.Tasks);
+    }
+
     public async Task<GetDatabaseConfigurationResult> GetDatabaseConfiguration(string databaseName, CancellationToken cancellationToken)
     {
         var configuration = await ForDatabase(databaseName).SendAsync(
@@ -161,7 +163,7 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
     public async Task<GetClientConfigurationResult> GetClientConfiguration(string databaseName, CancellationToken cancellationToken)
     {
         var configuration = await ForDatabase(databaseName).SendAsync(
-            new Raven.Client.Documents.Operations.Configuration.GetClientConfigurationOperation(),
+            new GetClientConfigurationOperation(),
             token: cancellationToken);
 
         return new GetClientConfigurationResult(databaseName, ToJson(configuration));
@@ -212,40 +214,36 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
         return new GetIndexingStatusResult(databaseName, ToJson(status));
     }
 
-    public async Task<GetIndexProgressResult> GetIndexProgress(string databaseName, CancellationToken cancellationToken)
-    {
-        return new GetIndexProgressResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/indexes/progress", cancellationToken));
-    }
-
-    public async Task<GetIndexStalenessResult> GetIndexStaleness(
+    public async Task<GetIndexResult> GetIndex(
         string databaseName,
         string indexName,
         CancellationToken cancellationToken)
     {
-        return new GetIndexStalenessResult(
-            databaseName,
-            indexName,
-            await GetDatabaseJson(databaseName, $"/indexes/staleness?name={Uri.EscapeDataString(indexName)}", cancellationToken));
+        ValidateName(indexName, "Index name", nameof(indexName));
+
+        var index = await ForDatabase(databaseName).SendAsync(
+            new GetIndexOperation(indexName),
+            token: cancellationToken);
+
+        return new GetIndexResult(databaseName, indexName, ToJson(index));
     }
 
-    public async Task<GetSuggestedIndexMergesResult> GetSuggestedIndexMerges(
+    public async Task<GetIndexTermsResult> GetIndexTerms(
         string databaseName,
+        string indexName,
+        string fieldName,
+        string? fromValue,
+        int? pageSize,
         CancellationToken cancellationToken)
     {
-        return new GetSuggestedIndexMergesResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/indexes/suggest-index-merge", cancellationToken));
-    }
+        ValidateName(indexName, "Index name", nameof(indexName));
+        ValidateName(fieldName, "Field name", nameof(fieldName));
 
-    public async Task<ListRunningOperationsResult> ListRunningOperations(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return new ListRunningOperationsResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/operations", cancellationToken));
+        var terms = await ForDatabase(databaseName).SendAsync(
+            new GetTermsOperation(indexName, fieldName, fromValue, pageSize),
+            token: cancellationToken);
+
+        return new GetIndexTermsResult(databaseName, indexName, fieldName, ToJson(terms));
     }
 
     public async Task<GetOperationStateResult> GetOperationState(
@@ -253,73 +251,62 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
         long operationId,
         CancellationToken cancellationToken)
     {
+        var state = await ForDatabase(databaseName).SendAsync(
+            new GetOperationStateOperation(operationId),
+            token: cancellationToken);
+
         return new GetOperationStateResult(
             databaseName,
             operationId,
-            await GetDatabaseJson(databaseName, $"/operations/state?id={operationId}", cancellationToken));
+            ToJson(state));
     }
 
-    public async Task<ListRunningQueriesResult> ListRunningQueries(
+    public async Task<ListOngoingTasksResult> ListOngoingTasks(
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return new ListRunningQueriesResult(
+        var record = await GetDatabaseRecordJson(databaseName, cancellationToken);
+
+        return new ListOngoingTasksResult(
             databaseName,
-            await GetDatabaseJson(databaseName, "/debug/queries/running", cancellationToken));
+            SelectRecordProperties(record, "backup", "replication", "etl", "subscription", "sink", "expiration", "refresh", "archival"));
     }
 
-    public async Task<GetQueryCacheInfoResult> GetQueryCacheInfo(
+    public async Task<GetBackupTasksResult> GetBackupTasks(
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return new GetQueryCacheInfoResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/debug/queries/cache/list", cancellationToken));
+        var record = await GetDatabaseRecordJson(databaseName, cancellationToken);
+        return new GetBackupTasksResult(databaseName, SelectRecordProperties(record, "backup"));
     }
 
-    public async Task<GetReplicationActiveConnectionsResult> GetReplicationActiveConnections(
+    public async Task<GetReplicationTasksResult> GetReplicationTasks(
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return new GetReplicationActiveConnectionsResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/replication/active-connections", cancellationToken));
-    }
-
-    public async Task<GetReplicationConflictsResult> GetReplicationConflicts(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return new GetReplicationConflictsResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/replication/conflicts", cancellationToken));
+        var record = await GetDatabaseRecordJson(databaseName, cancellationToken);
+        return new GetReplicationTasksResult(databaseName, SelectRecordProperties(record, "replication"));
     }
 
     public async Task<GetReplicationPerformanceResult> GetReplicationPerformance(
         string databaseName,
         CancellationToken cancellationToken)
     {
+        var performance = await ForDatabase(databaseName).SendAsync(
+            new GetReplicationPerformanceStatisticsOperation(),
+            token: cancellationToken);
+
         return new GetReplicationPerformanceResult(
             databaseName,
-            await GetDatabaseJson(databaseName, "/replication/performance", cancellationToken));
+            ToJson(performance));
     }
 
-    public async Task<GetOutgoingReplicationFailuresResult> GetOutgoingReplicationFailures(
+    public async Task<GetEtlTasksResult> GetEtlTasks(
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return new GetOutgoingReplicationFailuresResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/replication/debug/outgoing-failures", cancellationToken));
-    }
-
-    public async Task<GetIncomingReplicationRejectionInfoResult> GetIncomingReplicationRejectionInfo(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return new GetIncomingReplicationRejectionInfoResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/replication/debug/incoming-rejection-info", cancellationToken));
+        var record = await GetDatabaseRecordJson(databaseName, cancellationToken);
+        return new GetEtlTasksResult(databaseName, SelectRecordProperties(record, "etl"));
     }
 
     public async Task<GetBackupStatusResult> GetBackupStatus(
@@ -327,100 +314,354 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
         long taskId,
         CancellationToken cancellationToken)
     {
+        var status = await ForDatabase(databaseName).SendAsync(
+            new GetPeriodicBackupStatusOperation(taskId),
+            token: cancellationToken);
+
         return new GetBackupStatusResult(
             databaseName,
             taskId,
-            await GetServerJson($"/periodic-backup/status?name={Uri.EscapeDataString(databaseName)}&taskId={taskId}", cancellationToken));
+            ToJson(status));
     }
 
-    public async Task<GetNextBackupOccurrencesResult> GetNextBackupOccurrences(
+    public async Task<GetOngoingTaskInfoResult> GetOngoingTaskInfo(
         string databaseName,
+        long taskId,
+        OngoingTaskType taskType,
         CancellationToken cancellationToken)
     {
-        return new GetNextBackupOccurrencesResult(
+        var task = await ForDatabase(databaseName).SendAsync(
+            new GetOngoingTaskInfoOperation(taskId, taskType),
+            token: cancellationToken);
+
+        return new GetOngoingTaskInfoResult(
             databaseName,
-            await GetDatabaseJson(databaseName, "/admin/debug/periodic-backup/timers", cancellationToken));
+            taskId,
+            taskType.ToString(),
+            ToJson(task));
     }
 
-    public async Task<ListOngoingTasksResult> ListOngoingTasks(
+    public async Task<GetEtlTaskInfoResult> GetEtlTaskInfo(
         string databaseName,
+        long taskId,
+        OngoingTaskType taskType,
         CancellationToken cancellationToken)
     {
-        return new ListOngoingTasksResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/tasks", cancellationToken));
-    }
+        var task = await GetOngoingTaskInfo(databaseName, taskId, taskType, cancellationToken);
 
-    public async Task<GetEtlStatsResult> GetEtlStats(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return new GetEtlStatsResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/etl/stats", cancellationToken));
-    }
-
-    public async Task<GetEtlPerformanceResult> GetEtlPerformance(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return new GetEtlPerformanceResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/etl/performance", cancellationToken));
-    }
-
-    public async Task<GetEtlDebugStatsResult> GetEtlDebugStats(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return new GetEtlDebugStatsResult(
-            databaseName,
-            await GetDatabaseJson(databaseName, "/etl/debug/stats", cancellationToken));
+        return new GetEtlTaskInfoResult(
+            task.DatabaseName,
+            task.TaskId,
+            task.TaskType,
+            task.Task);
     }
 
     public async Task<GetSubscriptionsResult> GetSubscriptions(
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return new GetSubscriptionsResult(
+        ValidateDatabaseName(databaseName);
+
+        var subscriptions = await store.Subscriptions.GetSubscriptionsAsync(
+            0,
+            int.MaxValue,
             databaseName,
-            await GetDatabaseJson(databaseName, "/subscriptions", cancellationToken));
+            cancellationToken);
+
+        return new GetSubscriptionsResult(databaseName, ToJson(subscriptions));
     }
 
-    public async Task<GetSubscriptionConnectionDetailsResult> GetSubscriptionConnectionDetails(
+    public async Task<GetSubscriptionStateResult> GetSubscriptionState(
         string databaseName,
         string subscriptionName,
         CancellationToken cancellationToken)
     {
-        return new GetSubscriptionConnectionDetailsResult(
-            databaseName,
-            subscriptionName,
-            await GetDatabaseJson(databaseName, $"/subscriptions/connection-details?name={Uri.EscapeDataString(subscriptionName)}", cancellationToken));
-    }
+        ValidateDatabaseName(databaseName);
 
-    public async Task<GetNotificationCenterAlertsResult> GetNotificationCenterAlerts(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return new GetNotificationCenterAlertsResult(
+        if (string.IsNullOrWhiteSpace(subscriptionName))
+            throw new ArgumentException("Subscription name is required.", nameof(subscriptionName));
+
+        var state = await store.Subscriptions.GetSubscriptionStateAsync(
+            subscriptionName,
             databaseName,
-            await GetDatabaseJson(databaseName, "/notifications", cancellationToken));
+            cancellationToken);
+
+        return new GetSubscriptionStateResult(databaseName, subscriptionName, ToJson(state));
     }
 
     public async Task<GetDatabaseTcpInfoResult> GetDatabaseTcpInfo(
         string databaseName,
+        string nodeTag,
         CancellationToken cancellationToken)
     {
-        return new GetDatabaseTcpInfoResult(
+        ValidateDatabaseName(databaseName);
+
+        if (string.IsNullOrWhiteSpace(nodeTag))
+            throw new ArgumentException("Node tag is required.", nameof(nodeTag));
+
+        var tcp = await ExecuteServerCommand(new GetTcpInfoCommand(nodeTag, databaseName), cancellationToken);
+        return new GetDatabaseTcpInfoResult(databaseName, nodeTag, ToJson(tcp));
+    }
+
+    public async Task<GetIdentitiesResult> GetIdentities(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        var identities = await ForDatabase(databaseName).SendAsync(
+            new GetIdentitiesOperation(),
+            token: cancellationToken);
+
+        return new GetIdentitiesResult(databaseName, ToJson(identities));
+    }
+
+    public async Task<GetStorageOverviewResult> GetStorageOverview(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return new GetStorageOverviewResult(
+            databaseName,
+            await GetDatabaseJson(databaseName, "/debug/storage/report", cancellationToken),
+            await GetDatabaseJson(databaseName, "/debug/storage/all-environments/report", cancellationToken));
+    }
+
+    public async Task<GetStorageTreesResult> GetStorageTrees(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return new GetStorageTreesResult(
+            databaseName,
+            await GetDatabaseJson(databaseName, "/debug/storage/trees", cancellationToken));
+    }
+
+    public async Task<GetStorageEnvironmentReportResult> GetStorageEnvironmentReport(
+        string databaseName,
+        string? environmentName,
+        string? environmentType,
+        CancellationToken cancellationToken)
+    {
+        var name = string.IsNullOrWhiteSpace(environmentName) ? databaseName : environmentName;
+        var type = string.IsNullOrWhiteSpace(environmentType) ? "Documents" : environmentType;
+
+        return new GetStorageEnvironmentReportResult(
+            databaseName,
+            name,
+            type,
+            await GetDatabaseJson(
+                databaseName,
+                "/debug/storage/environment/report",
+                cancellationToken,
+                ("name", name),
+                ("type", type)));
+    }
+
+    public async Task<GetStorageTreeStructureResult> GetStorageTreeStructure(
+        string databaseName,
+        string treeName,
+        string? treeKind,
+        CancellationToken cancellationToken)
+    {
+        ValidateName(treeName, "Tree name", nameof(treeName));
+
+        var kind = string.IsNullOrWhiteSpace(treeKind) ? "btree" : treeKind;
+        var path = kind.Equals("fixed_size", StringComparison.OrdinalIgnoreCase) ||
+                   kind.Equals("fst", StringComparison.OrdinalIgnoreCase)
+            ? "/debug/storage/fst-structure"
+            : "/debug/storage/btree-structure";
+
+        return new GetStorageTreeStructureResult(
+            databaseName,
+            treeName,
+            kind,
+            await GetDatabaseText(databaseName, path, cancellationToken, ("name", treeName)));
+    }
+
+    public async Task<GetStorageCompressionDictionariesResult> GetStorageCompressionDictionaries(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return new GetStorageCompressionDictionariesResult(
+            databaseName,
+            await GetDatabaseJson(databaseName, "/debug/storage/compression-dictionaries", cancellationToken));
+    }
+
+    public async Task<GetStorageScratchBufferInfoResult> GetStorageScratchBufferInfo(
+        string databaseName,
+        string? environmentName,
+        string? environmentType,
+        CancellationToken cancellationToken)
+    {
+        var name = string.IsNullOrWhiteSpace(environmentName) ? databaseName : environmentName;
+        var type = string.IsNullOrWhiteSpace(environmentType) ? "Documents" : environmentType;
+
+        return new GetStorageScratchBufferInfoResult(
+            databaseName,
+            name,
+            type,
+            await GetDatabaseJson(
+                databaseName,
+                "/debug/storage/environment/scratch-buffer-info",
+                cancellationToken,
+                ("name", name),
+                ("type", type)));
+    }
+
+    public async Task<GetStorageFreeSpaceSnapshotResult> GetStorageFreeSpaceSnapshot(
+        string databaseName,
+        string? environmentName,
+        string? environmentType,
+        CancellationToken cancellationToken)
+    {
+        var name = string.IsNullOrWhiteSpace(environmentName) ? databaseName : environmentName;
+        var type = string.IsNullOrWhiteSpace(environmentType) ? "Documents" : environmentType;
+
+        return new GetStorageFreeSpaceSnapshotResult(
+            databaseName,
+            name,
+            type,
+            await GetDatabaseJson(
+                databaseName,
+                "/debug/storage/environment/free-space-snapshot",
+                cancellationToken,
+                ("name", name),
+                ("type", type)));
+    }
+
+    public async Task<GetPerformanceOverviewResult> GetPerformanceOverview(CancellationToken cancellationToken)
+    {
+        return new GetPerformanceOverviewResult(await GetServerJson("/admin/metrics", cancellationToken));
+    }
+
+    public async Task<GetCpuStatsResult> GetCpuStats(CancellationToken cancellationToken)
+    {
+        return new GetCpuStatsResult(await GetServerJson("/admin/debug/cpu/stats", cancellationToken));
+    }
+
+    public async Task<GetIoStatsResult> GetIoStats(string? databaseName, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(databaseName))
+            return new GetIoStatsResult(null, await GetServerJson("/admin/debug/io-metrics", cancellationToken));
+
+        return new GetIoStatsResult(
+            databaseName,
+            await GetDatabaseJson(databaseName, "/debug/io-metrics", cancellationToken));
+    }
+
+    public async Task<GetGcMemoryStatsResult> GetGcMemoryStats(CancellationToken cancellationToken)
+    {
+        return new GetGcMemoryStatsResult(await GetServerJson("/admin/debug/memory/gc", cancellationToken));
+    }
+
+    public async Task<GetOsMemoryStatsResult> GetOsMemoryStats(CancellationToken cancellationToken)
+    {
+        return new GetOsMemoryStatsResult(await GetServerJson("/admin/debug/memory/stats", cancellationToken));
+    }
+
+    public async Task<GetProcessStatsResult> GetProcessStats(CancellationToken cancellationToken)
+    {
+        return new GetProcessStatsResult(await GetServerJson("/admin/debug/proc/stats", cancellationToken));
+    }
+
+    public async Task<GetLowMemoryLogResult> GetLowMemoryLog(CancellationToken cancellationToken)
+    {
+        return new GetLowMemoryLogResult(await GetServerJson("/admin/debug/memory/low-mem-log", cancellationToken));
+    }
+
+    public async Task<GetEncryptionBufferPoolStatsResult> GetEncryptionBufferPoolStats(CancellationToken cancellationToken)
+    {
+        return new GetEncryptionBufferPoolStatsResult(await GetServerJson("/admin/debug/memory/encryption-buffer-pool", cancellationToken));
+    }
+
+    public async Task<SampleRuntimeEventsResult> SampleRuntimeEvents(
+        string kind,
+        int seconds,
+        CancellationToken cancellationToken)
+    {
+        var path = kind.Equals("gc", StringComparison.OrdinalIgnoreCase)
+            ? "/admin/debug/memory/gc-events"
+            : "/admin/debug/memory/allocations";
+
+        return new SampleRuntimeEventsResult(
+            kind,
+            Math.Clamp(seconds, 1, 30),
+            await GetServerTextSample(path, seconds, cancellationToken));
+    }
+
+    public async Task<GetThreadStatsResult> GetThreadStats(CancellationToken cancellationToken)
+    {
+        var stats = await GetServerJson("/admin/debug/memory/stats", cancellationToken);
+        return new GetThreadStatsResult(stats.GetProperty("Threads").Clone());
+    }
+
+    public async Task<SampleThreadDiagnosticsResult> SampleThreadDiagnostics(
+        string kind,
+        int seconds,
+        CancellationToken cancellationToken)
+    {
+        var path = kind.Equals("contention", StringComparison.OrdinalIgnoreCase)
+            ? "/admin/debug/threads/contention"
+            : "/admin/debug/threads/runaway";
+
+        if (path.EndsWith("/runaway", StringComparison.Ordinal))
+            return new SampleThreadDiagnosticsResult(kind, 0, await GetServerText(path, cancellationToken));
+
+        return new SampleThreadDiagnosticsResult(
+            kind,
+            Math.Clamp(seconds, 1, 30),
+            await GetServerTextSample(path, seconds, cancellationToken));
+    }
+
+    public async Task<GetStackTracesResult> GetStackTraces(CancellationToken cancellationToken)
+    {
+        return new GetStackTracesResult(await GetServerJson("/admin/debug/threads/stack-trace", cancellationToken));
+    }
+
+    public async Task<GetScriptRunnersResult> GetScriptRunners(
+        string? databaseName,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(databaseName))
+            return new GetScriptRunnersResult(null, await GetServerJson("/admin/debug/script-runners", cancellationToken));
+
+        return new GetScriptRunnersResult(
+            databaseName,
+            await GetDatabaseJson(databaseName, "/debug/script-runners", cancellationToken));
+    }
+
+    public async Task<GetTcpStatsResult> GetTcpStats(CancellationToken cancellationToken)
+    {
+        return new GetTcpStatsResult(await GetServerJson("/admin/debug/info/tcp/stats", cancellationToken));
+    }
+
+    public async Task<ListTcpConnectionsResult> ListTcpConnections(
+        string? databaseName,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(databaseName))
+            return new ListTcpConnectionsResult(null, await GetServerJson("/admin/debug/info/tcp/active-connections", cancellationToken));
+
+        return new ListTcpConnectionsResult(
             databaseName,
             await GetDatabaseJson(databaseName, "/info/tcp", cancellationToken));
     }
 
+    private async Task<JsonElement> GetDatabaseRecordJson(string databaseName, CancellationToken cancellationToken)
+    {
+        ValidateDatabaseName(databaseName);
+
+        var record = await store.Maintenance.Server.SendAsync(
+            new GetDatabaseRecordOperation(databaseName),
+            cancellationToken);
+
+        if (record is null)
+            throw new InvalidOperationException($"Database '{databaseName}' was not found.");
+
+        // DatabaseRecord keeps most payload data in fields.
+        return ToJson(record);
+    }
+
     private MaintenanceOperationExecutor ForDatabase(string databaseName)
     {
-        if (string.IsNullOrWhiteSpace(databaseName))
-            throw new ArgumentException("Database name is required.", nameof(databaseName));
-
+        ValidateDatabaseName(databaseName);
         return store.Maintenance.ForDatabase(databaseName);
     }
 
@@ -431,21 +672,93 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
             cancellationToken);
     }
 
-    private Task<JsonElement> GetServerJson(string path, CancellationToken cancellationToken)
+    private Task<JsonElement> GetServerJson(
+        string path,
+        CancellationToken cancellationToken,
+        params (string Name, string? Value)[] query)
     {
-        return store.Maintenance.Server.SendAsync(
-            new RawJsonOperation(path, isDatabaseRequest: false),
-            cancellationToken);
+        return GetJson(BuildServerUrl(path, query), cancellationToken);
     }
 
     private Task<JsonElement> GetDatabaseJson(
         string databaseName,
         string path,
+        CancellationToken cancellationToken,
+        params (string Name, string? Value)[] query)
+    {
+        ValidateDatabaseName(databaseName);
+        return GetJson(BuildDatabaseUrl(databaseName, path, query), cancellationToken);
+    }
+
+    private Task<string> GetServerText(string path, CancellationToken cancellationToken)
+    {
+        return GetText(BuildServerUrl(path), cancellationToken);
+    }
+
+    private Task<string> GetDatabaseText(
+        string databaseName,
+        string path,
+        CancellationToken cancellationToken,
+        params (string Name, string? Value)[] query)
+    {
+        ValidateDatabaseName(databaseName);
+        return GetText(BuildDatabaseUrl(databaseName, path, query), cancellationToken);
+    }
+
+    private async Task<JsonElement> GetJson(string url, CancellationToken cancellationToken)
+    {
+        var content = await GetText(url, cancellationToken);
+        return JsonSerializer.Deserialize<JsonElement>(content);
+    }
+
+    private async Task<string> GetText(string url, CancellationToken cancellationToken)
+    {
+        using var response = await http.GetAsync(url, cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"GET {url} failed with {(int)response.StatusCode}: {content}");
+
+        return content;
+    }
+
+    private async Task<string> GetServerTextSample(
+        string path,
+        int seconds,
         CancellationToken cancellationToken)
     {
-        return ForDatabase(databaseName).SendAsync(
-            new RawJsonOperation(path, isDatabaseRequest: true),
-            token: cancellationToken);
+        var sampleSeconds = Math.Clamp(seconds, 1, 30);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(sampleSeconds));
+
+        var result = new StringBuilder();
+
+        try
+        {
+            using var response = await http.GetAsync(
+                BuildServerUrl(path),
+                HttpCompletionOption.ResponseHeadersRead,
+                timeout.Token);
+
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
+            using var reader = new StreamReader(stream);
+            var buffer = new char[4096];
+
+            while (!timeout.Token.IsCancellationRequested && result.Length < 131_072)
+            {
+                var read = await reader.ReadAsync(buffer, timeout.Token);
+                if (read == 0)
+                    break;
+
+                result.Append(buffer, 0, read);
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+        }
+
+        return result.ToString();
     }
 
     private static JsonElement ToJson<T>(T value)
@@ -453,44 +766,70 @@ public sealed class RavenDbAdminClient(IDocumentStore store)
         return JsonSerializer.SerializeToElement(value, RavenDbJsonOptions);
     }
 
+    private static HttpClient CreateHttpClient(RavenDbOptions? options)
+    {
+        if (options is null || string.IsNullOrWhiteSpace(options.CertificatePath))
+            return new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+
+        var handler = new HttpClientHandler();
+        handler.ClientCertificates.Add(DocumentStoreFactory.LoadCertificate(options)!);
+        return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60) };
+    }
+
+    private string BuildServerUrl(
+        string path,
+        params (string Name, string? Value)[] query)
+    {
+        return WithQuery($"{serverUrl}{path}", query);
+    }
+
+    private string BuildDatabaseUrl(
+        string databaseName,
+        string path,
+        params (string Name, string? Value)[] query)
+    {
+        return WithQuery($"{serverUrl}/databases/{Uri.EscapeDataString(databaseName)}{path}", query);
+    }
+
+    private static string WithQuery(string url, params (string Name, string? Value)[] query)
+    {
+        var values = query
+            .Where(item => !string.IsNullOrWhiteSpace(item.Value))
+            .Select(item => $"{Uri.EscapeDataString(item.Name)}={Uri.EscapeDataString(item.Value!)}")
+            .ToArray();
+
+        return values.Length == 0 ? url : $"{url}?{string.Join('&', values)}";
+    }
+
+    private static JsonElement SelectRecordProperties(JsonElement record, params string[] nameFragments)
+    {
+        var values = new Dictionary<string, JsonElement>();
+
+        foreach (var property in record.EnumerateObject())
+        {
+            if (nameFragments.Any(fragment => property.Name.Contains(fragment, StringComparison.OrdinalIgnoreCase)))
+                values[property.Name] = property.Value.Clone();
+        }
+
+        return ToJson(values);
+    }
+
+    private static void ValidateDatabaseName(string databaseName)
+    {
+        ValidateName(databaseName, "Database name", nameof(databaseName));
+    }
+
+    private static void ValidateName(string value, string label, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException($"{label} is required.", parameterName);
+    }
+
     private sealed class ServerCommandOperation<T>(RavenCommand<T> command) : IServerOperation<T>
     {
         public RavenCommand<T> GetCommand(DocumentConventions conventions, JsonOperationContext context)
         {
             return command;
-        }
-    }
-
-    private sealed class RawJsonOperation(string path, bool isDatabaseRequest) :
-        IServerOperation<JsonElement>,
-        IMaintenanceOperation<JsonElement>
-    {
-        public RavenCommand<JsonElement> GetCommand(DocumentConventions conventions, JsonOperationContext context)
-        {
-            return new RawJsonCommand(path, isDatabaseRequest);
-        }
-    }
-
-    private sealed class RawJsonCommand(string path, bool isDatabaseRequest) : RavenCommand<JsonElement>
-    {
-        public override bool IsReadRequest => true;
-
-        public override HttpRequestMessage CreateRequest(JsonOperationContext context, ServerNode node, out string url)
-        {
-            url = isDatabaseRequest
-                ? $"{node.Url}/databases/{node.Database}{path}"
-                : node.Url + path;
-
-            return new HttpRequestMessage
-            {
-                Method = HttpMethod.Get
-            };
-        }
-
-        public override void SetResponse(JsonOperationContext context, BlittableJsonReaderObject response, bool fromCache)
-        {
-            using var document = JsonDocument.Parse(response.ToString());
-            Result = document.RootElement.Clone();
         }
     }
 }

@@ -60,6 +60,15 @@ public static class DatabaseTools
         return client.GetDetailedCollectionStats(databaseName, cancellationToken);
     }
 
+    [McpServerTool(Name = "get_database_health_summary", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetDatabaseHealthSummaryResult> GetDatabaseHealthSummary(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetDatabaseHealthSummary(databaseName, cancellationToken);
+    }
+
     [McpServerTool(Name = "get_database_configuration", ReadOnly = true, UseStructuredContent = true)]
     public static Task<GetDatabaseConfigurationResult> GetDatabaseConfiguration(
         RavenDbAdminClient client,
@@ -77,6 +86,7 @@ public static class DatabaseTools
     {
         return client.GetClientConfiguration(databaseName, cancellationToken);
     }
+
 }
 
 public sealed record ListDatabasesResult(string[] Databases);
@@ -90,6 +100,14 @@ public sealed record GetDetailedDatabaseStatsResult(string DatabaseName, JsonEle
 public sealed record GetCollectionStatsResult(string DatabaseName, JsonElement Stats);
 
 public sealed record GetDetailedCollectionStatsResult(string DatabaseName, JsonElement Stats);
+
+public sealed record GetDatabaseHealthSummaryResult(
+    string DatabaseName,
+    JsonElement Stats,
+    JsonElement IndexingStatus,
+    JsonElement IndexStats,
+    JsonElement IndexErrors,
+    JsonElement Tasks);
 
 public sealed record GetDatabaseConfigurationResult(string DatabaseName, JsonElement Configuration);
 

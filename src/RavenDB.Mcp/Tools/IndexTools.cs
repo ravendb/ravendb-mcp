@@ -52,32 +52,27 @@ public static class IndexTools
         return client.GetIndexingStatus(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_index_progress", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetIndexProgressResult> GetIndexProgress(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetIndexProgress(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_index_staleness", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetIndexStalenessResult> GetIndexStaleness(
+    [McpServerTool(Name = "get_index", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetIndexResult> GetIndex(
         RavenDbAdminClient client,
         string databaseName,
         string indexName,
         CancellationToken cancellationToken)
     {
-        return client.GetIndexStaleness(databaseName, indexName, cancellationToken);
+        return client.GetIndex(databaseName, indexName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_suggested_index_merges", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetSuggestedIndexMergesResult> GetSuggestedIndexMerges(
+    [McpServerTool(Name = "get_index_terms", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetIndexTermsResult> GetIndexTerms(
         RavenDbAdminClient client,
         string databaseName,
+        string indexName,
+        string fieldName,
+        string? fromValue,
+        int? pageSize,
         CancellationToken cancellationToken)
     {
-        return client.GetSuggestedIndexMerges(databaseName, cancellationToken);
+        return client.GetIndexTerms(databaseName, indexName, fieldName, fromValue, pageSize, cancellationToken);
     }
 }
 
@@ -91,8 +86,10 @@ public sealed record GetIndexPerformanceResult(string DatabaseName, JsonElement 
 
 public sealed record GetIndexingStatusResult(string DatabaseName, JsonElement Status);
 
-public sealed record GetIndexProgressResult(string DatabaseName, JsonElement Progress);
+public sealed record GetIndexResult(string DatabaseName, string IndexName, JsonElement Index);
 
-public sealed record GetIndexStalenessResult(string DatabaseName, string IndexName, JsonElement Staleness);
-
-public sealed record GetSuggestedIndexMergesResult(string DatabaseName, JsonElement Merges);
+public sealed record GetIndexTermsResult(
+    string DatabaseName,
+    string IndexName,
+    string FieldName,
+    JsonElement Terms);

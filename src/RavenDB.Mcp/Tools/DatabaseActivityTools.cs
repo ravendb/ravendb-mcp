@@ -16,42 +16,43 @@ public static class DatabaseActivityTools
         return client.GetSubscriptions(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_subscription_connection_details", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetSubscriptionConnectionDetailsResult> GetSubscriptionConnectionDetails(
+    [McpServerTool(Name = "get_subscription_state", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetSubscriptionStateResult> GetSubscriptionState(
         RavenDbAdminClient client,
         string databaseName,
         string subscriptionName,
         CancellationToken cancellationToken)
     {
-        return client.GetSubscriptionConnectionDetails(databaseName, subscriptionName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_notification_center_alerts", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetNotificationCenterAlertsResult> GetNotificationCenterAlerts(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetNotificationCenterAlerts(databaseName, cancellationToken);
+        return client.GetSubscriptionState(databaseName, subscriptionName, cancellationToken);
     }
 
     [McpServerTool(Name = "get_database_tcp_info", ReadOnly = true, UseStructuredContent = true)]
     public static Task<GetDatabaseTcpInfoResult> GetDatabaseTcpInfo(
         RavenDbAdminClient client,
         string databaseName,
+        string nodeTag,
         CancellationToken cancellationToken)
     {
-        return client.GetDatabaseTcpInfo(databaseName, cancellationToken);
+        return client.GetDatabaseTcpInfo(databaseName, nodeTag, cancellationToken);
+    }
+
+    [McpServerTool(Name = "get_identities", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetIdentitiesResult> GetIdentities(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetIdentities(databaseName, cancellationToken);
     }
 }
 
 public sealed record GetSubscriptionsResult(string DatabaseName, JsonElement Subscriptions);
 
-public sealed record GetSubscriptionConnectionDetailsResult(
+public sealed record GetSubscriptionStateResult(
     string DatabaseName,
     string SubscriptionName,
-    JsonElement ConnectionDetails);
+    JsonElement State);
 
-public sealed record GetNotificationCenterAlertsResult(string DatabaseName, JsonElement Alerts);
+public sealed record GetDatabaseTcpInfoResult(string DatabaseName, string NodeTag, JsonElement Tcp);
 
-public sealed record GetDatabaseTcpInfoResult(string DatabaseName, JsonElement Tcp);
+public sealed record GetIdentitiesResult(string DatabaseName, JsonElement Identities);

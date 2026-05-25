@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ModelContextProtocol.Server;
+using Raven.Client.Documents.Operations.OngoingTasks;
 using RavenDB.Mcp.RavenDB;
 
 namespace RavenDB.Mcp.Tools;
@@ -7,6 +8,15 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class TaskTools
 {
+    [McpServerTool(Name = "get_backup_tasks", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetBackupTasksResult> GetBackupTasks(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetBackupTasks(databaseName, cancellationToken);
+    }
+
     [McpServerTool(Name = "get_backup_status", ReadOnly = true, UseStructuredContent = true)]
     public static Task<GetBackupStatusResult> GetBackupStatus(
         RavenDbAdminClient client,
@@ -17,60 +27,52 @@ public static class TaskTools
         return client.GetBackupStatus(databaseName, taskId, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_next_backup_occurrences", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetNextBackupOccurrencesResult> GetNextBackupOccurrences(
+    [McpServerTool(Name = "get_ongoing_task_info", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetOngoingTaskInfoResult> GetOngoingTaskInfo(
         RavenDbAdminClient client,
         string databaseName,
+        long taskId,
+        OngoingTaskType taskType,
         CancellationToken cancellationToken)
     {
-        return client.GetNextBackupOccurrences(databaseName, cancellationToken);
+        return client.GetOngoingTaskInfo(databaseName, taskId, taskType, cancellationToken);
     }
 
-    [McpServerTool(Name = "list_ongoing_tasks", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<ListOngoingTasksResult> ListOngoingTasks(
+    [McpServerTool(Name = "get_etl_tasks", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetEtlTasksResult> GetEtlTasks(
         RavenDbAdminClient client,
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return client.ListOngoingTasks(databaseName, cancellationToken);
+        return client.GetEtlTasks(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_etl_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetEtlStatsResult> GetEtlStats(
+    [McpServerTool(Name = "get_etl_task_info", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetEtlTaskInfoResult> GetEtlTaskInfo(
         RavenDbAdminClient client,
         string databaseName,
+        long taskId,
+        OngoingTaskType taskType,
         CancellationToken cancellationToken)
     {
-        return client.GetEtlStats(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_etl_performance", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetEtlPerformanceResult> GetEtlPerformance(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetEtlPerformance(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_etl_debug_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetEtlDebugStatsResult> GetEtlDebugStats(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetEtlDebugStats(databaseName, cancellationToken);
+        return client.GetEtlTaskInfo(databaseName, taskId, taskType, cancellationToken);
     }
 }
 
+public sealed record GetBackupTasksResult(string DatabaseName, JsonElement Tasks);
+
 public sealed record GetBackupStatusResult(string DatabaseName, long TaskId, JsonElement Status);
 
-public sealed record GetNextBackupOccurrencesResult(string DatabaseName, JsonElement Occurrences);
+public sealed record GetOngoingTaskInfoResult(
+    string DatabaseName,
+    long TaskId,
+    string TaskType,
+    JsonElement Task);
 
-public sealed record ListOngoingTasksResult(string DatabaseName, JsonElement Tasks);
+public sealed record GetEtlTasksResult(string DatabaseName, JsonElement Tasks);
 
-public sealed record GetEtlStatsResult(string DatabaseName, JsonElement Stats);
-
-public sealed record GetEtlPerformanceResult(string DatabaseName, JsonElement Performance);
-
-public sealed record GetEtlDebugStatsResult(string DatabaseName, JsonElement Stats);
+public sealed record GetEtlTaskInfoResult(
+    string DatabaseName,
+    long TaskId,
+    string TaskType,
+    JsonElement Task);

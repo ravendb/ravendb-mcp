@@ -18,7 +18,7 @@ public static class DocumentStoreFactory
         return store;
     }
 
-    private static X509Certificate2? LoadCertificate(RavenDbOptions options)
+    public static X509Certificate2? LoadCertificate(RavenDbOptions options)
     {
         if (string.IsNullOrWhiteSpace(options.CertificatePath))
             return null;
