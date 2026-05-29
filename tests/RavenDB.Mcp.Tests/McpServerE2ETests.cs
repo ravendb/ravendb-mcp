@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using RavenDB.Mcp.Configuration;
 
 namespace RavenDB.Mcp.Tests;
 
@@ -24,19 +25,23 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
             .Select(tool => tool.GetProperty("name").GetString())
             .ToArray();
 
-        Assert.Equal(ExpectedToolNames.Order(), toolNames.Order());
-        Assert.All(toolNames, name => Assert.Equal(name, name!.ToLowerInvariant()));
+        Assert.Equal(ToolCatalog.ExpectedToolNames.Order(), toolNames.Order());
+        Assert.All(toolNames, name => Assert.Matches("^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$", name!));
         Assert.All(toolsArray, tool => Assert.True(
             tool.GetProperty("annotations").GetProperty("readOnlyHint").GetBoolean()));
 
-        using var serverInfo = await client.CallTool("get_server_info", null, timeout.Token);
-        Assert.Equal("7.2", serverInfo.RootElement.GetProperty("productVersion").GetString());
-
-        using var nodeStatus = await client.CallTool("get_node_status", null, timeout.Token);
-        Assert.Equal(JsonValueKind.Object, nodeStatus.RootElement.GetProperty("status").ValueKind);
+        using var clusterNodes = await client.CallTool("get_cluster_nodes", null, timeout.Token);
+        Assert.Equal("7.2", clusterNodes.RootElement.GetProperty("server").GetProperty("productVersion").GetString());
+        Assert.NotEmpty(clusterNodes.RootElement.GetProperty("cluster").GetProperty("nodes").EnumerateArray());
 
         using var logsConfiguration = await client.CallTool("get_logs_configuration", null, timeout.Token);
         Assert.Equal(JsonValueKind.Object, logsConfiguration.RootElement.GetProperty("configuration").ValueKind);
+
+        using var serverDiagnostics = await client.CallTool("get_server_diagnostics_overview", null, timeout.Token);
+        Assert.Equal(JsonValueKind.Object, serverDiagnostics.RootElement.GetProperty("metrics").ValueKind);
+
+        using var clusterDiagnostics = await client.CallTool("get_cluster_diagnostics_overview", null, timeout.Token);
+        Assert.Equal(JsonValueKind.Object, clusterDiagnostics.RootElement.GetProperty("observerDecisions").ValueKind);
 
         using var serverWideClientConfiguration = await client.CallTool("get_server_wide_client_configuration", null, timeout.Token);
         Assert.True(serverWideClientConfiguration.RootElement.GetProperty("configuration").ValueKind is JsonValueKind.Object or JsonValueKind.Null);
@@ -55,36 +60,25 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
             fixture.DatabaseName,
             databaseRecord.RootElement.GetProperty("databaseName").GetString());
 
-        using var topology = await client.CallTool("get_cluster_topology", null, timeout.Token);
-        Assert.Equal(JsonValueKind.Object, topology.RootElement.GetProperty("topology").ValueKind);
-        var nodeTag = topology.RootElement
-            .GetProperty("topology")
-            .GetProperty("NodeTag")
+        var nodeTag = clusterNodes.RootElement
+            .GetProperty("cluster")
+            .GetProperty("respondingNodeTag")
             .GetString()!;
 
-        using var stats = await client.CallTool(
-            "get_database_stats",
+        using var databaseOverview = await client.CallTool(
+            "get_database_overview",
             new { databaseName = fixture.DatabaseName },
             timeout.Token);
-        Assert.Equal(fixture.DatabaseName, stats.RootElement.GetProperty("databaseName").GetString());
+        Assert.Equal(fixture.DatabaseName, databaseOverview.RootElement.GetProperty("databaseName").GetString());
+        Assert.Equal(JsonValueKind.Object, databaseOverview.RootElement.GetProperty("stats").ValueKind);
+        Assert.Equal(JsonValueKind.Object, databaseOverview.RootElement.GetProperty("detailedStats").ValueKind);
 
-        using var detailedStats = await client.CallTool(
-            "get_detailed_database_stats",
+        using var collectionOverview = await client.CallTool(
+            "get_collection_overview",
             new { databaseName = fixture.DatabaseName },
             timeout.Token);
-        Assert.Equal(JsonValueKind.Object, detailedStats.RootElement.GetProperty("stats").ValueKind);
-
-        using var collectionStats = await client.CallTool(
-            "get_collection_stats",
-            new { databaseName = fixture.DatabaseName },
-            timeout.Token);
-        Assert.Equal(JsonValueKind.Object, collectionStats.RootElement.GetProperty("stats").ValueKind);
-
-        using var detailedCollectionStats = await client.CallTool(
-            "get_detailed_collection_stats",
-            new { databaseName = fixture.DatabaseName },
-            timeout.Token);
-        Assert.Equal(JsonValueKind.Object, detailedCollectionStats.RootElement.GetProperty("stats").ValueKind);
+        Assert.Equal(JsonValueKind.Object, collectionOverview.RootElement.GetProperty("stats").ValueKind);
+        Assert.Equal(JsonValueKind.Object, collectionOverview.RootElement.GetProperty("detailedStats").ValueKind);
 
         using var databaseConfiguration = await client.CallTool(
             "get_database_configuration",
@@ -98,41 +92,16 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
             timeout.Token);
         Assert.Equal(JsonValueKind.Object, clientConfiguration.RootElement.GetProperty("configuration").ValueKind);
 
-        using var health = await client.CallTool(
-            "get_database_health_summary",
+        using var indexingOverview = await client.CallTool(
+            "get_indexing_overview",
             new { databaseName = fixture.DatabaseName },
             timeout.Token);
-        Assert.Equal(JsonValueKind.Object, health.RootElement.GetProperty("stats").ValueKind);
-
-        using var indexes = await client.CallTool(
-            "list_indexes",
-            new { databaseName = fixture.DatabaseName },
-            timeout.Token);
-        Assert.Equal(JsonValueKind.Array, indexes.RootElement.GetProperty("indexes").ValueKind);
-
-        using var indexStats = await client.CallTool(
-            "get_index_stats",
-            new { databaseName = fixture.DatabaseName },
-            timeout.Token);
-        Assert.Equal(JsonValueKind.Array, indexStats.RootElement.GetProperty("stats").ValueKind);
-
-        using var indexErrors = await client.CallTool(
-            "get_index_errors",
-            new { databaseName = fixture.DatabaseName },
-            timeout.Token);
-        Assert.Equal(JsonValueKind.Array, indexErrors.RootElement.GetProperty("errors").ValueKind);
-
-        using var indexPerformance = await client.CallTool(
-            "get_index_performance",
-            new { databaseName = fixture.DatabaseName },
-            timeout.Token);
-        Assert.Equal(JsonValueKind.Array, indexPerformance.RootElement.GetProperty("performance").ValueKind);
-
-        using var indexingStatus = await client.CallTool(
-            "get_indexing_status",
-            new { databaseName = fixture.DatabaseName },
-            timeout.Token);
-        Assert.Equal(JsonValueKind.Object, indexingStatus.RootElement.GetProperty("status").ValueKind);
+        Assert.Equal(JsonValueKind.Array, indexingOverview.RootElement.GetProperty("indexes").ValueKind);
+        Assert.Equal(JsonValueKind.Array, indexingOverview.RootElement.GetProperty("stats").ValueKind);
+        Assert.Equal(JsonValueKind.Array, indexingOverview.RootElement.GetProperty("errors").ValueKind);
+        Assert.Equal(JsonValueKind.Array, indexingOverview.RootElement.GetProperty("performance").ValueKind);
+        Assert.Equal(JsonValueKind.Object, indexingOverview.RootElement.GetProperty("status").ValueKind);
+        Assert.Equal(JsonValueKind.Object, indexingOverview.RootElement.GetProperty("progress").ValueKind);
 
         using var index = await client.CallTool(
             "get_index",
@@ -154,16 +123,23 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
         Assert.Equal(JsonValueKind.Array, indexTerms.RootElement.GetProperty("terms").ValueKind);
 
         using var replication = await client.CallTool(
-            "get_replication_performance",
+            "get_replication_tasks_details",
             new { databaseName = fixture.DatabaseName },
             timeout.Token);
+        Assert.Equal(JsonValueKind.Object, replication.RootElement.GetProperty("tasks").ValueKind);
         Assert.Equal(JsonValueKind.Object, replication.RootElement.GetProperty("performance").ValueKind);
 
-        using var replicationTasks = await client.CallTool(
-            "get_replication_tasks",
+        using var queryDiagnostics = await client.CallTool(
+            "get_query_diagnostics",
             new { databaseName = fixture.DatabaseName },
             timeout.Token);
-        Assert.Equal(JsonValueKind.Object, replicationTasks.RootElement.GetProperty("tasks").ValueKind);
+        Assert.Equal(JsonValueKind.Object, queryDiagnostics.RootElement.GetProperty("runningQueries").ValueKind);
+
+        using var backupDiagnostics = await client.CallTool(
+            "get_backup_diagnostics",
+            new { databaseName = fixture.DatabaseName },
+            timeout.Token);
+        Assert.Equal(JsonValueKind.Object, backupDiagnostics.RootElement.GetProperty("tasks").ValueKind);
 
         using var backupTasks = await client.CallTool(
             "get_backup_tasks",
@@ -177,8 +153,14 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
             timeout.Token);
         Assert.Equal(JsonValueKind.Object, etlTasks.RootElement.GetProperty("tasks").ValueKind);
 
+        using var etlDiagnostics = await client.CallTool(
+            "get_etl_diagnostics",
+            new { databaseName = fixture.DatabaseName },
+            timeout.Token);
+        Assert.Equal(JsonValueKind.Object, etlDiagnostics.RootElement.GetProperty("tasks").ValueKind);
+
         using var ongoingTasks = await client.CallTool(
-            "list_ongoing_tasks",
+            "get_database_tasks",
             new { databaseName = fixture.DatabaseName },
             timeout.Token);
         Assert.Equal(JsonValueKind.Object, ongoingTasks.RootElement.GetProperty("tasks").ValueKind);
@@ -188,6 +170,12 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
             new { databaseName = fixture.DatabaseName },
             timeout.Token);
         Assert.Equal(JsonValueKind.Array, subscriptions.RootElement.GetProperty("subscriptions").ValueKind);
+
+        using var subscriptionDiagnostics = await client.CallTool(
+            "get_subscription_diagnostics",
+            new { databaseName = fixture.DatabaseName },
+            timeout.Token);
+        Assert.Equal(JsonValueKind.Array, subscriptionDiagnostics.RootElement.GetProperty("subscriptions").ValueKind);
 
         using var tcp = await client.CallTool(
             "get_database_tcp_info",
@@ -224,81 +212,16 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
             timeout.Token);
         Assert.NotEmpty(storageTreeStructure.RootElement.GetProperty("structure").GetString()!);
 
-        using var performanceOverview = await client.CallTool("get_performance_overview", null, timeout.Token);
-        Assert.Equal(JsonValueKind.Object, performanceOverview.RootElement.GetProperty("metrics").ValueKind);
-
-        using var cpuStats = await client.CallTool("get_cpu_stats", null, timeout.Token);
-        Assert.Equal(JsonValueKind.Object, cpuStats.RootElement.GetProperty("cpu").ValueKind);
-
-        using var processStats = await client.CallTool("get_process_stats", null, timeout.Token);
-        Assert.Equal(JsonValueKind.Object, processStats.RootElement.GetProperty("process").ValueKind);
-
-        using var threadStats = await client.CallTool("get_thread_stats", null, timeout.Token);
-        Assert.Equal(JsonValueKind.Array, threadStats.RootElement.GetProperty("threads").ValueKind);
+        using var serverResources = await client.CallTool("get_server_resources", null, timeout.Token);
+        Assert.Equal(JsonValueKind.Object, serverResources.RootElement.GetProperty("metrics").ValueKind);
+        Assert.Equal(JsonValueKind.Object, serverResources.RootElement.GetProperty("cpu").ValueKind);
+        Assert.Equal(JsonValueKind.Object, serverResources.RootElement.GetProperty("process").ValueKind);
+        Assert.Equal(JsonValueKind.Array, serverResources.RootElement.GetProperty("threads").ValueKind);
 
         using var tcpStats = await client.CallTool("get_tcp_stats", null, timeout.Token);
         Assert.Equal(JsonValueKind.Object, tcpStats.RootElement.GetProperty("tcp").ValueKind);
     }
 
-    private static readonly string[] ExpectedToolNames =
-    [
-        "get_backup_status",
-        "get_backup_tasks",
-        "get_client_configuration",
-        "get_cluster_topology",
-        "get_collection_stats",
-        "get_cpu_stats",
-        "get_database_configuration",
-        "get_database_health_summary",
-        "get_database_record",
-        "get_database_stats",
-        "get_database_tcp_info",
-        "get_detailed_collection_stats",
-        "get_detailed_database_stats",
-        "get_etl_task_info",
-        "get_etl_tasks",
-        "get_encryption_buffer_pool_stats",
-        "get_gc_memory_stats",
-        "get_identities",
-        "get_index",
-        "get_index_errors",
-        "get_index_performance",
-        "get_index_stats",
-        "get_index_terms",
-        "get_indexing_status",
-        "get_io_stats",
-        "get_logs_configuration",
-        "get_low_memory_log",
-        "get_node_status",
-        "get_ongoing_task_info",
-        "get_operation_state",
-        "get_os_memory_stats",
-        "get_performance_overview",
-        "get_process_stats",
-        "get_replication_performance",
-        "get_replication_tasks",
-        "get_script_runners",
-        "get_server_info",
-        "get_server_wide_client_configuration",
-        "get_stack_traces",
-        "get_storage_compression_dictionaries",
-        "get_storage_environment_report",
-        "get_storage_free_space_snapshot",
-        "get_storage_overview",
-        "get_storage_scratch_buffer_info",
-        "get_storage_tree_structure",
-        "get_storage_trees",
-        "get_subscription_state",
-        "get_subscriptions",
-        "get_tcp_stats",
-        "get_thread_stats",
-        "list_databases",
-        "list_indexes",
-        "list_ongoing_tasks",
-        "list_tcp_connections",
-        "sample_runtime_events",
-        "sample_thread_diagnostics"
-    ];
 }
 
 internal sealed class McpStdioClient : IAsyncDisposable
@@ -313,6 +236,11 @@ internal sealed class McpStdioClient : IAsyncDisposable
 
     public static McpStdioClient Start(string ravenDbUrl)
     {
+        return Start(new RavenDbOptions { Urls = [ravenDbUrl] });
+    }
+
+    public static McpStdioClient Start(RavenDbOptions options)
+    {
         var serverAssembly = typeof(global::RavenDB.Mcp.RavenDB.RavenDbAdminClient).Assembly.Location;
 
         var startInfo = new ProcessStartInfo
@@ -325,7 +253,16 @@ internal sealed class McpStdioClient : IAsyncDisposable
             RedirectStandardError = true,
             UseShellExecute = false,
         };
-        startInfo.Environment["Urls__0"] = ravenDbUrl;
+        startInfo.Environment["Urls__0"] = options.Urls[0];
+
+        if (!string.IsNullOrWhiteSpace(options.CertificatePath))
+            startInfo.Environment["CertificatePath"] = options.CertificatePath;
+
+        if (options.CertificatePassword is not null)
+            startInfo.Environment["CertificatePassword"] = options.CertificatePassword;
+
+        if (options.ArtifactsPath is not null)
+            startInfo.Environment["ArtifactsPath"] = options.ArtifactsPath;
 
         var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Failed to start RavenDB.Mcp process.");

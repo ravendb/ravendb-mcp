@@ -7,15 +7,15 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
     : IClassFixture<RavenDbTestFixture>
 {
     [Fact]
-    public async Task ReadsServerInfoAndDatabaseRecord()
+    public async Task ReadsClusterNodesAndDatabaseRecord()
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var client = new RavenDbAdminClient(fixture.Store);
 
-        var serverInfo = await client.GetServerInfo(timeout.Token);
-        Assert.NotEmpty(serverInfo.ProductVersion);
-        Assert.True(serverInfo.BuildVersion > 0);
-        Assert.Equal(JsonValueKind.Object, serverInfo.NodeInfo.ValueKind);
+        var clusterNodes = await client.GetClusterNodes(timeout.Token);
+        Assert.NotEmpty(clusterNodes.Server.ProductVersion);
+        Assert.True(clusterNodes.Server.BuildVersion > 0);
+        Assert.NotEmpty(clusterNodes.Cluster.Nodes);
 
         var databases = await client.ListDatabases(timeout.Token);
         Assert.Contains(fixture.DatabaseName, databases.Databases);
@@ -34,31 +34,30 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var client = new RavenDbAdminClient(fixture.Store);
 
-        var topology = await client.GetClusterTopology(timeout.Token);
-        var nodeTag = topology.Topology.GetProperty("NodeTag").GetString()!;
+        var clusterNodes = await client.GetClusterNodes(timeout.Token);
+        var nodeTag = clusterNodes.Cluster.RespondingNodeTag!;
 
-        Assert.Equal(JsonValueKind.Object, topology.Topology.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetNodeStatus(timeout.Token)).Status.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetLogsConfiguration(timeout.Token)).Configuration.ValueKind);
 
-        var stats = await client.GetDatabaseStats(fixture.DatabaseName, timeout.Token);
-        Assert.Equal(fixture.DatabaseName, stats.DatabaseName);
-        Assert.Equal(JsonValueKind.Object, stats.Stats.ValueKind);
+        var overview = await client.GetDatabaseOverview(fixture.DatabaseName, timeout.Token);
+        Assert.Equal(fixture.DatabaseName, overview.DatabaseName);
+        Assert.Equal(JsonValueKind.Object, overview.Stats.ValueKind);
+        Assert.Equal(JsonValueKind.Object, overview.DetailedStats.ValueKind);
 
-        Assert.Equal(JsonValueKind.Object, (await client.GetDetailedDatabaseStats(fixture.DatabaseName, timeout.Token)).Stats.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetCollectionStats(fixture.DatabaseName, timeout.Token)).Stats.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetDetailedCollectionStats(fixture.DatabaseName, timeout.Token)).Stats.ValueKind);
+        var collections = await client.GetCollectionOverview(fixture.DatabaseName, timeout.Token);
+        Assert.Equal(JsonValueKind.Object, collections.Stats.ValueKind);
+        Assert.Equal(JsonValueKind.Object, collections.DetailedStats.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetDatabaseConfiguration(fixture.DatabaseName, timeout.Token)).Configuration.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetClientConfiguration(fixture.DatabaseName, timeout.Token)).Configuration.ValueKind);
         var serverWideClientConfiguration = await client.GetServerWideClientConfiguration(timeout.Token);
         Assert.True(serverWideClientConfiguration.Configuration.ValueKind is JsonValueKind.Object or JsonValueKind.Null);
-        Assert.Equal(JsonValueKind.Object, (await client.GetDatabaseHealthSummary(fixture.DatabaseName, timeout.Token)).Stats.ValueKind);
 
-        Assert.Equal(JsonValueKind.Array, (await client.ListIndexes(fixture.DatabaseName, timeout.Token)).Indexes.ValueKind);
-        Assert.Equal(JsonValueKind.Array, (await client.GetIndexStats(fixture.DatabaseName, timeout.Token)).Stats.ValueKind);
-        Assert.Equal(JsonValueKind.Array, (await client.GetIndexErrors(fixture.DatabaseName, timeout.Token)).Errors.ValueKind);
-        Assert.Equal(JsonValueKind.Array, (await client.GetIndexPerformance(fixture.DatabaseName, timeout.Token)).Performance.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetIndexingStatus(fixture.DatabaseName, timeout.Token)).Status.ValueKind);
+        var indexing = await client.GetIndexingOverview(fixture.DatabaseName, timeout.Token);
+        Assert.Equal(JsonValueKind.Array, indexing.Indexes.ValueKind);
+        Assert.Equal(JsonValueKind.Array, indexing.Stats.ValueKind);
+        Assert.Equal(JsonValueKind.Array, indexing.Errors.ValueKind);
+        Assert.Equal(JsonValueKind.Array, indexing.Performance.ValueKind);
+        Assert.Equal(JsonValueKind.Object, indexing.Status.ValueKind);
 
         var index = await client.GetIndex(fixture.DatabaseName, fixture.IndexName, timeout.Token);
         Assert.Equal(fixture.IndexName, index.IndexName);
@@ -73,11 +72,10 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
             timeout.Token);
         Assert.Equal(JsonValueKind.Array, terms.Terms.ValueKind);
 
-        Assert.Equal(JsonValueKind.Object, (await client.GetReplicationPerformance(fixture.DatabaseName, timeout.Token)).Performance.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetReplicationTasks(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
+        Assert.Equal(JsonValueKind.Object, (await client.GetReplicationTasksDetails(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetBackupTasks(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetEtlTasks(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.ListOngoingTasks(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
+        Assert.Equal(JsonValueKind.Object, (await client.GetDatabaseTasks(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
 
         Assert.Equal(JsonValueKind.Array, (await client.GetSubscriptions(fixture.DatabaseName, timeout.Token)).Subscriptions.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetDatabaseTcpInfo(fixture.DatabaseName, nodeTag, timeout.Token)).Tcp.ValueKind);
@@ -96,15 +94,16 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
         Assert.Equal(JsonValueKind.Object, overview.Environments.ValueKind);
 
         Assert.Equal(JsonValueKind.Object, (await client.GetStorageTrees(fixture.DatabaseName, timeout.Token)).Trees.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetStorageEnvironmentReport(fixture.DatabaseName, null, null, timeout.Token)).Report.ValueKind);
+        var environment = await client.GetStorageEnvironmentDetails(fixture.DatabaseName, null, null, timeout.Token);
+        Assert.Equal(JsonValueKind.Object, environment.Report.ValueKind);
+        Assert.Equal(JsonValueKind.Object, environment.ScratchBuffers.ValueKind);
+        Assert.Equal(JsonValueKind.Object, environment.FreeSpace.ValueKind);
 
         var tree = await client.GetStorageTreeStructure(fixture.DatabaseName, "Docs", null, timeout.Token);
         Assert.Equal("Docs", tree.TreeName);
         Assert.NotEmpty(tree.Structure);
 
         Assert.Equal(JsonValueKind.Object, (await client.GetStorageCompressionDictionaries(fixture.DatabaseName, timeout.Token)).Dictionaries.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetStorageScratchBufferInfo(fixture.DatabaseName, null, null, timeout.Token)).ScratchBuffers.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetStorageFreeSpaceSnapshot(fixture.DatabaseName, null, null, timeout.Token)).FreeSpace.ValueKind);
     }
 
     [Fact]
@@ -113,16 +112,19 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
         var client = new RavenDbAdminClient(fixture.Store);
 
-        Assert.Equal(JsonValueKind.Object, (await client.GetPerformanceOverview(timeout.Token)).Metrics.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetCpuStats(timeout.Token)).Cpu.ValueKind);
+        var resources = await client.GetServerResources(timeout.Token);
+        Assert.Equal(JsonValueKind.Object, resources.Metrics.ValueKind);
+        Assert.Equal(JsonValueKind.Object, resources.Cpu.ValueKind);
+        Assert.Equal(JsonValueKind.Object, resources.Io.ValueKind);
+        Assert.Equal(JsonValueKind.Object, resources.Gc.ValueKind);
+        Assert.Equal(JsonValueKind.Object, resources.Memory.ValueKind);
+        Assert.Equal(JsonValueKind.Object, resources.Process.ValueKind);
+        Assert.Equal(JsonValueKind.Array, resources.Threads.ValueKind);
+
         Assert.Equal(JsonValueKind.Object, (await client.GetIoStats(null, timeout.Token)).Io.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetIoStats(fixture.DatabaseName, timeout.Token)).Io.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetGcMemoryStats(timeout.Token)).Gc.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetOsMemoryStats(timeout.Token)).Memory.ValueKind);
-        Assert.Equal(JsonValueKind.Object, (await client.GetProcessStats(timeout.Token)).Process.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetLowMemoryLog(timeout.Token)).Log.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetEncryptionBufferPoolStats(timeout.Token)).BufferPool.ValueKind);
-        Assert.Equal(JsonValueKind.Array, (await client.GetThreadStats(timeout.Token)).Threads.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetStackTraces(timeout.Token)).StackTraces.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetScriptRunners(null, timeout.Token)).ScriptRunners.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetScriptRunners(fixture.DatabaseName, timeout.Token)).ScriptRunners.ValueKind);
