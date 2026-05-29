@@ -8,6 +8,15 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class TaskTools
 {
+    [McpServerTool(Name = "get_database_tasks", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetDatabaseTasksResult> GetDatabaseTasks(
+        RavenDbAdminClient client,
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        return client.GetDatabaseTasks(databaseName, cancellationToken);
+    }
+
     [McpServerTool(Name = "get_backup_tasks", ReadOnly = true, UseStructuredContent = true)]
     public static Task<GetBackupTasksResult> GetBackupTasks(
         RavenDbAdminClient client,
@@ -60,6 +69,14 @@ public static class TaskTools
 }
 
 public sealed record GetBackupTasksResult(string DatabaseName, JsonElement Tasks);
+
+public sealed record GetDatabaseTasksResult(
+    string DatabaseName,
+    JsonElement Tasks,
+    JsonElement BackupTasks,
+    JsonElement EtlTasks,
+    JsonElement ReplicationTasks,
+    JsonElement Subscriptions);
 
 public sealed record GetBackupStatusResult(string DatabaseName, long TaskId, JsonElement Status);
 

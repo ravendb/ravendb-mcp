@@ -21,7 +21,7 @@ using Sparrow.Json;
 
 namespace RavenDB.Mcp.RavenDB;
 
-public sealed class RavenDbAdminClient(
+public sealed partial class RavenDbAdminClient(
     IDocumentStore store,
     IOptions<RavenDbOptions>? options = null)
 {
@@ -30,8 +30,12 @@ public sealed class RavenDbAdminClient(
         IncludeFields = true
     };
 
+    private readonly RavenDbOptions? configuredOptions = options?.Value;
     private readonly HttpClient http = CreateHttpClient(options?.Value);
     private readonly string serverUrl = (options?.Value.Urls.FirstOrDefault() ?? store.Urls.First()).TrimEnd('/');
+    private readonly string artifactsPath = string.IsNullOrWhiteSpace(options?.Value.ArtifactsPath)
+        ? Path.Combine(Path.GetTempPath(), "ravendb-mcp-artifacts")
+        : options.Value.ArtifactsPath;
 
     public async Task<ListDatabasesResult> ListDatabases(CancellationToken cancellationToken)
     {
@@ -72,10 +76,34 @@ public sealed class RavenDbAdminClient(
         return new GetClusterTopologyResult(ToJson(topology));
     }
 
-    public async Task<GetNodeStatusResult> GetNodeStatus(CancellationToken cancellationToken)
+    public async Task<GetClusterNodesResult> GetClusterNodes(CancellationToken cancellationToken)
     {
+        var server = await store.Maintenance.Server.SendAsync(
+            new GetBuildNumberOperation(),
+            cancellationToken);
+        var currentNode = await ExecuteServerCommand(new GetNodeInfoCommand(), cancellationToken);
         var topology = await ExecuteServerCommand(new GetClusterTopologyCommand(), cancellationToken);
-        return new GetNodeStatusResult(ToJson(topology));
+
+        var nodes = new List<ClusterNodeResult>();
+
+        foreach (var (tag, url) in topology.Topology.AllNodes.OrderBy(node => node.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            NodeStatus? status = null;
+            topology.Status?.TryGetValue(tag, out status);
+            nodes.Add(await GetClusterNode(tag, GetNodeType(tag, topology), url, status, cancellationToken));
+        }
+
+        return new GetClusterNodesResult(
+            ToServerBuild(server),
+            ToCurrentNode(currentNode),
+            new ClusterResult(
+                topology.Topology.TopologyId,
+                topology.Topology.Etag,
+                topology.Leader,
+                topology.NodeTag,
+                topology.ServerRole.ToString(),
+                topology.Topology.LastNodeId,
+                [.. nodes]));
     }
 
     public async Task<GetLogsConfigurationToolResult> GetLogsConfiguration(CancellationToken cancellationToken)
@@ -132,6 +160,19 @@ public sealed class RavenDbAdminClient(
         return new GetDetailedCollectionStatsResult(databaseName, ToJson(stats));
     }
 
+    public async Task<GetCollectionOverviewResult> GetCollectionOverview(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        var stats = await GetCollectionStats(databaseName, cancellationToken);
+        var detailedStats = await GetDetailedCollectionStats(databaseName, cancellationToken);
+
+        return new GetCollectionOverviewResult(
+            databaseName,
+            stats.Stats,
+            detailedStats.Stats);
+    }
+
     public async Task<GetDatabaseHealthSummaryResult> GetDatabaseHealthSummary(
         string databaseName,
         CancellationToken cancellationToken)
@@ -145,6 +186,27 @@ public sealed class RavenDbAdminClient(
         return new GetDatabaseHealthSummaryResult(
             databaseName,
             stats.Stats,
+            indexingStatus.Status,
+            indexStats.Stats,
+            indexErrors.Errors,
+            tasks.Tasks);
+    }
+
+    public async Task<GetDatabaseOverviewResult> GetDatabaseOverview(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        var stats = await GetDatabaseStats(databaseName, cancellationToken);
+        var detailedStats = await GetDetailedDatabaseStats(databaseName, cancellationToken);
+        var indexingStatus = await GetIndexingStatus(databaseName, cancellationToken);
+        var indexStats = await GetIndexStats(databaseName, cancellationToken);
+        var indexErrors = await GetIndexErrors(databaseName, cancellationToken);
+        var tasks = await GetDatabaseTasks(databaseName, cancellationToken);
+
+        return new GetDatabaseOverviewResult(
+            databaseName,
+            stats.Stats,
+            detailedStats.Stats,
             indexingStatus.Status,
             indexStats.Stats,
             indexErrors.Errors,
@@ -214,6 +276,28 @@ public sealed class RavenDbAdminClient(
         return new GetIndexingStatusResult(databaseName, ToJson(status));
     }
 
+    public async Task<GetIndexingOverviewResult> GetIndexingOverview(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        var indexes = await ListIndexes(databaseName, cancellationToken);
+        var stats = await GetIndexStats(databaseName, cancellationToken);
+        var errors = await GetIndexErrors(databaseName, cancellationToken);
+        var status = await GetIndexingStatus(databaseName, cancellationToken);
+        var performance = await GetIndexPerformance(databaseName, cancellationToken);
+
+        return new GetIndexingOverviewResult(
+            databaseName,
+            SummarizeIndexes(indexes.Indexes),
+            stats.Stats,
+            errors.Errors,
+            status.Status,
+            performance.Performance,
+            await TryGetDatabaseJson(databaseName, "/indexes/progress", cancellationToken),
+            await TryGetDatabaseJson(databaseName, "/indexes/suggested-index-merge", cancellationToken),
+            await TryGetDatabaseJson(databaseName, "/indexes/debug/total-time", cancellationToken));
+    }
+
     public async Task<GetIndexResult> GetIndex(
         string databaseName,
         string indexName,
@@ -280,6 +364,25 @@ public sealed class RavenDbAdminClient(
         return new GetBackupTasksResult(databaseName, SelectRecordProperties(record, "backup"));
     }
 
+    public async Task<GetDatabaseTasksResult> GetDatabaseTasks(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        var tasks = await ListOngoingTasks(databaseName, cancellationToken);
+        var backupTasks = await GetBackupTasks(databaseName, cancellationToken);
+        var etlTasks = await GetEtlTasks(databaseName, cancellationToken);
+        var replicationTasks = await GetReplicationTasks(databaseName, cancellationToken);
+        var subscriptions = await GetSubscriptions(databaseName, cancellationToken);
+
+        return new GetDatabaseTasksResult(
+            databaseName,
+            tasks.Tasks,
+            backupTasks.Tasks,
+            etlTasks.Tasks,
+            replicationTasks.Tasks,
+            subscriptions.Subscriptions);
+    }
+
     public async Task<GetReplicationTasksResult> GetReplicationTasks(
         string databaseName,
         CancellationToken cancellationToken)
@@ -299,6 +402,27 @@ public sealed class RavenDbAdminClient(
         return new GetReplicationPerformanceResult(
             databaseName,
             ToJson(performance));
+    }
+
+    public async Task<GetReplicationTasksDetailsResult> GetReplicationTasksDetails(
+        string databaseName,
+        CancellationToken cancellationToken)
+    {
+        var tasks = await GetReplicationTasks(databaseName, cancellationToken);
+        var performance = await GetReplicationPerformance(databaseName, cancellationToken);
+
+        return new GetReplicationTasksDetailsResult(
+            databaseName,
+            tasks.Tasks,
+            performance.Performance,
+            await TryGetDatabaseJson(databaseName, "/replication/active-connections", cancellationToken),
+            await TryGetDatabaseJson(databaseName, "/replication/conflicts", cancellationToken),
+            await TryGetDatabaseJson(databaseName, "/replication/debug/outgoing-failures", cancellationToken),
+            await TryGetDatabaseJson(databaseName, "/replication/debug/incoming-last-activity-time", cancellationToken),
+            await TryGetDatabaseJson(databaseName, "/replication/debug/incoming-rejection-info", cancellationToken),
+            await TryGetDatabaseJson(databaseName, "/replication/debug/outgoing-reconnect-queue", cancellationToken),
+            await TryGetDatabaseJson(databaseName, "/replication/progress", cancellationToken),
+            await TryGetDatabaseJson(databaseName, "/replication/debug/outgoing-internal-progress", cancellationToken));
     }
 
     public async Task<GetEtlTasksResult> GetEtlTasks(
@@ -505,6 +629,25 @@ public sealed class RavenDbAdminClient(
                 ("type", type)));
     }
 
+    public async Task<GetStorageEnvironmentDetailsResult> GetStorageEnvironmentDetails(
+        string databaseName,
+        string? environmentName,
+        string? environmentType,
+        CancellationToken cancellationToken)
+    {
+        var report = await GetStorageEnvironmentReport(databaseName, environmentName, environmentType, cancellationToken);
+        var scratchBuffers = await GetStorageScratchBufferInfo(databaseName, environmentName, environmentType, cancellationToken);
+        var freeSpace = await GetStorageFreeSpaceSnapshot(databaseName, environmentName, environmentType, cancellationToken);
+
+        return new GetStorageEnvironmentDetailsResult(
+            databaseName,
+            report.EnvironmentName,
+            report.EnvironmentType,
+            report.Report,
+            scratchBuffers.ScratchBuffers,
+            freeSpace.FreeSpace);
+    }
+
     public async Task<GetStorageFreeSpaceSnapshotResult> GetStorageFreeSpaceSnapshot(
         string databaseName,
         string? environmentName,
@@ -529,6 +672,20 @@ public sealed class RavenDbAdminClient(
     public async Task<GetPerformanceOverviewResult> GetPerformanceOverview(CancellationToken cancellationToken)
     {
         return new GetPerformanceOverviewResult(await GetServerJson("/admin/metrics", cancellationToken));
+    }
+
+    public async Task<GetServerResourcesResult> GetServerResources(CancellationToken cancellationToken)
+    {
+        var memory = await GetOsMemoryStats(cancellationToken);
+
+        return new GetServerResourcesResult(
+            (await GetPerformanceOverview(cancellationToken)).Metrics,
+            (await GetCpuStats(cancellationToken)).Cpu,
+            (await GetIoStats(null, cancellationToken)).Io,
+            (await GetGcMemoryStats(cancellationToken)).Gc,
+            memory.Memory,
+            (await GetProcessStats(cancellationToken)).Process,
+            memory.Memory.GetProperty("Threads").Clone());
     }
 
     public async Task<GetCpuStatsResult> GetCpuStats(CancellationToken cancellationToken)
@@ -667,7 +824,15 @@ public sealed class RavenDbAdminClient(
 
     private Task<T> ExecuteServerCommand<T>(RavenCommand<T> command, CancellationToken cancellationToken)
     {
-        return store.Maintenance.Server.SendAsync(
+        return ExecuteServerCommand(store, command, cancellationToken);
+    }
+
+    private static Task<T> ExecuteServerCommand<T>(
+        IDocumentStore targetStore,
+        RavenCommand<T> command,
+        CancellationToken cancellationToken)
+    {
+        return targetStore.Maintenance.Server.SendAsync(
             new ServerCommandOperation<T>(command),
             cancellationToken);
     }
@@ -709,6 +874,29 @@ public sealed class RavenDbAdminClient(
     {
         var content = await GetText(url, cancellationToken);
         return JsonSerializer.Deserialize<JsonElement>(content);
+    }
+
+    private async Task<JsonElement> TryGetDatabaseJson(
+        string databaseName,
+        string path,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return ToJson(new
+            {
+                available = true,
+                value = await GetDatabaseJson(databaseName, path, cancellationToken)
+            });
+        }
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ToJson(new
+            {
+                available = false,
+                error = exception.Message
+            });
+        }
     }
 
     private async Task<string> GetText(string url, CancellationToken cancellationToken)
@@ -759,6 +947,117 @@ public sealed class RavenDbAdminClient(
         }
 
         return result.ToString();
+    }
+
+    private async Task<ClusterNodeResult> GetClusterNode(
+        string tag,
+        string type,
+        string url,
+        NodeStatus? status,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var nodeStore = DocumentStoreFactory.Create(NodeOptions(url));
+            var build = await nodeStore.Maintenance.Server.SendAsync(new GetBuildNumberOperation(), cancellationToken);
+            var self = await ExecuteServerCommand(nodeStore, new GetNodeInfoCommand(), cancellationToken);
+
+            return new ClusterNodeResult(
+                tag,
+                type,
+                url,
+                status is null ? null : ToClusterNodeStatus(status),
+                ToServerBuild(build),
+                ToCurrentNode(self),
+                null);
+        }
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            return new ClusterNodeResult(
+                tag,
+                type,
+                url,
+                status is null ? null : ToClusterNodeStatus(status),
+                null,
+                null,
+                exception.Message);
+        }
+    }
+
+    private RavenDbOptions NodeOptions(string url)
+    {
+        return configuredOptions is null
+            ? new RavenDbOptions { Urls = [url] }
+            : configuredOptions with { Urls = [url] };
+    }
+
+    private static string GetNodeType(string tag, ClusterTopologyResponse topology)
+    {
+        if (topology.Topology.Members.ContainsKey(tag))
+            return "member";
+
+        if (topology.Topology.Promotables.ContainsKey(tag))
+            return "promotable";
+
+        if (topology.Topology.Watchers.ContainsKey(tag))
+            return "watcher";
+
+        return "unknown";
+    }
+
+    private static ServerBuildResult ToServerBuild(BuildNumber build)
+    {
+        return new ServerBuildResult(
+            build.ProductVersion,
+            build.BuildVersion,
+            build.AssemblyVersion,
+            build.CommitHash,
+            build.FullVersion);
+    }
+
+    private static CurrentNodeResult ToCurrentNode(NodeInfo node)
+    {
+        return new CurrentNodeResult(
+            node.NodeTag,
+            node.ServerId,
+            node.TopologyId,
+            node.ClusterStatus,
+            node.CurrentState.ToString(),
+            node.ServerRole.ToString(),
+            node.ServerSchemaVersion,
+            node.HasFixedPort,
+            node.NumberOfCores,
+            node.InstalledMemoryInGb,
+            node.UsableMemoryInGb,
+            !string.IsNullOrWhiteSpace(node.Certificate),
+            node.OsInfo is null ? null : new OsInfoResult(
+                node.OsInfo.Type.ToString(),
+                node.OsInfo.FullName,
+                node.OsInfo.Version,
+                node.OsInfo.BuildVersion,
+                node.OsInfo.Is64Bit));
+    }
+
+    private static ClusterNodeStatusResult ToClusterNodeStatus(NodeStatus status)
+    {
+        return new ClusterNodeStatusResult(
+            status.Name,
+            status.Connected,
+            status.LastSent,
+            status.LastReply,
+            status.LastSentMessage,
+            status.LastMatchingIndex,
+            status.ErrorDetails);
+    }
+
+    private static JsonElement SummarizeIndexes(JsonElement indexes)
+    {
+        var values = new List<Dictionary<string, JsonElement>>();
+
+        foreach (var index in indexes.EnumerateArray())
+            values.Add(SelectProperties(index, "Name", "Type", "SourceType", "State", "Priority", "LockMode", "DeploymentMode"));
+
+        return ToJson(values);
     }
 
     private static JsonElement ToJson<T>(T value)
@@ -812,6 +1111,19 @@ public sealed class RavenDbAdminClient(
         }
 
         return ToJson(values);
+    }
+
+    private static Dictionary<string, JsonElement> SelectProperties(JsonElement value, params string[] names)
+    {
+        var selected = new Dictionary<string, JsonElement>();
+
+        foreach (var name in names)
+        {
+            if (value.TryGetProperty(name, out var property))
+                selected[name] = property.Clone();
+        }
+
+        return selected;
     }
 
     private static void ValidateDatabaseName(string databaseName)

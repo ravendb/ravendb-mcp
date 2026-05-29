@@ -25,15 +25,15 @@ public static class StoragePerformanceTools
         return client.GetStorageTrees(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_storage_environment_report", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetStorageEnvironmentReportResult> GetStorageEnvironmentReport(
+    [McpServerTool(Name = "get_storage_environment_details", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetStorageEnvironmentDetailsResult> GetStorageEnvironmentDetails(
         RavenDbAdminClient client,
         string databaseName,
         string? environmentName,
         string? environmentType,
         CancellationToken cancellationToken)
     {
-        return client.GetStorageEnvironmentReport(databaseName, environmentName, environmentType, cancellationToken);
+        return client.GetStorageEnvironmentDetails(databaseName, environmentName, environmentType, cancellationToken);
     }
 
     [McpServerTool(Name = "get_storage_tree_structure", ReadOnly = true, UseStructuredContent = true)]
@@ -56,42 +56,12 @@ public static class StoragePerformanceTools
         return client.GetStorageCompressionDictionaries(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_storage_scratch_buffer_info", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetStorageScratchBufferInfoResult> GetStorageScratchBufferInfo(
-        RavenDbAdminClient client,
-        string databaseName,
-        string? environmentName,
-        string? environmentType,
-        CancellationToken cancellationToken)
-    {
-        return client.GetStorageScratchBufferInfo(databaseName, environmentName, environmentType, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_storage_free_space_snapshot", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetStorageFreeSpaceSnapshotResult> GetStorageFreeSpaceSnapshot(
-        RavenDbAdminClient client,
-        string databaseName,
-        string? environmentName,
-        string? environmentType,
-        CancellationToken cancellationToken)
-    {
-        return client.GetStorageFreeSpaceSnapshot(databaseName, environmentName, environmentType, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_performance_overview", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetPerformanceOverviewResult> GetPerformanceOverview(
+    [McpServerTool(Name = "get_server_resources", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetServerResourcesResult> GetServerResources(
         RavenDbAdminClient client,
         CancellationToken cancellationToken)
     {
-        return client.GetPerformanceOverview(cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_cpu_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetCpuStatsResult> GetCpuStats(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetCpuStats(cancellationToken);
+        return client.GetServerResources(cancellationToken);
     }
 
     [McpServerTool(Name = "get_io_stats", ReadOnly = true, UseStructuredContent = true)]
@@ -101,30 +71,6 @@ public static class StoragePerformanceTools
         CancellationToken cancellationToken)
     {
         return client.GetIoStats(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_gc_memory_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetGcMemoryStatsResult> GetGcMemoryStats(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetGcMemoryStats(cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_os_memory_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetOsMemoryStatsResult> GetOsMemoryStats(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetOsMemoryStats(cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_process_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetProcessStatsResult> GetProcessStats(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetProcessStats(cancellationToken);
     }
 
     [McpServerTool(Name = "get_low_memory_log", ReadOnly = true, UseStructuredContent = true)]
@@ -151,14 +97,6 @@ public static class StoragePerformanceTools
         CancellationToken cancellationToken)
     {
         return client.SampleRuntimeEvents(kind, seconds, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_thread_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetThreadStatsResult> GetThreadStats(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetThreadStats(cancellationToken);
     }
 
     [McpServerTool(Name = "sample_thread_diagnostics", ReadOnly = true, UseStructuredContent = true)]
@@ -216,6 +154,14 @@ public sealed record GetStorageEnvironmentReportResult(
     string EnvironmentType,
     JsonElement Report);
 
+public sealed record GetStorageEnvironmentDetailsResult(
+    string DatabaseName,
+    string EnvironmentName,
+    string EnvironmentType,
+    JsonElement Report,
+    JsonElement ScratchBuffers,
+    JsonElement FreeSpace);
+
 public sealed record GetStorageTreeStructureResult(
     string DatabaseName,
     string TreeName,
@@ -237,6 +183,15 @@ public sealed record GetStorageFreeSpaceSnapshotResult(
     JsonElement FreeSpace);
 
 public sealed record GetPerformanceOverviewResult(JsonElement Metrics);
+
+public sealed record GetServerResourcesResult(
+    JsonElement Metrics,
+    JsonElement Cpu,
+    JsonElement Io,
+    JsonElement Gc,
+    JsonElement Memory,
+    JsonElement Process,
+    JsonElement Threads);
 
 public sealed record GetCpuStatsResult(JsonElement Cpu);
 

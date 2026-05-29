@@ -24,49 +24,22 @@ public static class DatabaseTools
         return client.GetDatabaseRecord(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_database_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetDatabaseStatsResult> GetDatabaseStats(
+    [McpServerTool(Name = "get_collection_overview", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetCollectionOverviewResult> GetCollectionOverview(
         RavenDbAdminClient client,
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return client.GetDatabaseStats(databaseName, cancellationToken);
+        return client.GetCollectionOverview(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_detailed_database_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetDetailedDatabaseStatsResult> GetDetailedDatabaseStats(
+    [McpServerTool(Name = "get_database_overview", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetDatabaseOverviewResult> GetDatabaseOverview(
         RavenDbAdminClient client,
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return client.GetDetailedDatabaseStats(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_collection_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetCollectionStatsResult> GetCollectionStats(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetCollectionStats(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_detailed_collection_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetDetailedCollectionStatsResult> GetDetailedCollectionStats(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetDetailedCollectionStats(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_database_health_summary", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetDatabaseHealthSummaryResult> GetDatabaseHealthSummary(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetDatabaseHealthSummary(databaseName, cancellationToken);
+        return client.GetDatabaseOverview(databaseName, cancellationToken);
     }
 
     [McpServerTool(Name = "get_database_configuration", ReadOnly = true, UseStructuredContent = true)]
@@ -100,6 +73,20 @@ public sealed record GetDetailedDatabaseStatsResult(string DatabaseName, JsonEle
 public sealed record GetCollectionStatsResult(string DatabaseName, JsonElement Stats);
 
 public sealed record GetDetailedCollectionStatsResult(string DatabaseName, JsonElement Stats);
+
+public sealed record GetCollectionOverviewResult(
+    string DatabaseName,
+    JsonElement Stats,
+    JsonElement DetailedStats);
+
+public sealed record GetDatabaseOverviewResult(
+    string DatabaseName,
+    JsonElement Stats,
+    JsonElement DetailedStats,
+    JsonElement IndexingStatus,
+    JsonElement IndexStats,
+    JsonElement IndexErrors,
+    JsonElement Tasks);
 
 public sealed record GetDatabaseHealthSummaryResult(
     string DatabaseName,

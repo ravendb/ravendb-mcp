@@ -17,14 +17,6 @@ public static class OperationsTools
         return client.GetOperationState(databaseName, operationId, cancellationToken);
     }
 
-    [McpServerTool(Name = "list_ongoing_tasks", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<ListOngoingTasksResult> ListOngoingTasks(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.ListOngoingTasks(databaseName, cancellationToken);
-    }
 }
 
 public sealed record GetOperationStateResult(string DatabaseName, long OperationId, JsonElement State);

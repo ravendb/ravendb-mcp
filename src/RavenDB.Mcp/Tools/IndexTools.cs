@@ -7,49 +7,13 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class IndexTools
 {
-    [McpServerTool(Name = "list_indexes", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<ListIndexesResult> ListIndexes(
+    [McpServerTool(Name = "get_indexing_overview", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetIndexingOverviewResult> GetIndexingOverview(
         RavenDbAdminClient client,
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return client.ListIndexes(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_index_stats", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetIndexStatsResult> GetIndexStats(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetIndexStats(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_index_errors", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetIndexErrorsResult> GetIndexErrors(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetIndexErrors(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_index_performance", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetIndexPerformanceResult> GetIndexPerformance(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetIndexPerformance(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_indexing_status", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetIndexingStatusResult> GetIndexingStatus(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetIndexingStatus(databaseName, cancellationToken);
+        return client.GetIndexingOverview(databaseName, cancellationToken);
     }
 
     [McpServerTool(Name = "get_index", ReadOnly = true, UseStructuredContent = true)]
@@ -85,6 +49,17 @@ public sealed record GetIndexErrorsResult(string DatabaseName, JsonElement Error
 public sealed record GetIndexPerformanceResult(string DatabaseName, JsonElement Performance);
 
 public sealed record GetIndexingStatusResult(string DatabaseName, JsonElement Status);
+
+public sealed record GetIndexingOverviewResult(
+    string DatabaseName,
+    JsonElement Indexes,
+    JsonElement Stats,
+    JsonElement Errors,
+    JsonElement Status,
+    JsonElement Performance,
+    JsonElement Progress,
+    JsonElement SuggestedMerges,
+    JsonElement TotalTime);
 
 public sealed record GetIndexResult(string DatabaseName, string IndexName, JsonElement Index);
 

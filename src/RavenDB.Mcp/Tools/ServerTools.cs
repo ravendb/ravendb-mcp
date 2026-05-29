@@ -7,28 +7,12 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class ServerTools
 {
-    [McpServerTool(Name = "get_server_info", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetServerInfoResult> GetServerInfo(
+    [McpServerTool(Name = "get_cluster_nodes", ReadOnly = true, UseStructuredContent = true)]
+    public static Task<GetClusterNodesResult> GetClusterNodes(
         RavenDbAdminClient client,
         CancellationToken cancellationToken)
     {
-        return client.GetServerInfo(cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_cluster_topology", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetClusterTopologyResult> GetClusterTopology(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetClusterTopology(cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_node_status", ReadOnly = true, UseStructuredContent = true)]
-    public static Task<GetNodeStatusResult> GetNodeStatus(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetNodeStatus(cancellationToken);
+        return client.GetClusterNodes(cancellationToken);
     }
 
     [McpServerTool(Name = "get_logs_configuration", ReadOnly = true, UseStructuredContent = true)]
@@ -48,6 +32,13 @@ public static class ServerTools
     }
 }
 
+public sealed record ServerBuildResult(
+    string ProductVersion,
+    int BuildVersion,
+    string? AssemblyVersion,
+    string CommitHash,
+    string FullVersion);
+
 public sealed record GetServerInfoResult(
     string ProductVersion,
     int BuildVersion,
@@ -57,7 +48,59 @@ public sealed record GetServerInfoResult(
 
 public sealed record GetClusterTopologyResult(JsonElement Topology);
 
-public sealed record GetNodeStatusResult(JsonElement Status);
+public sealed record CurrentNodeResult(
+    string? NodeTag,
+    Guid ServerId,
+    string? TopologyId,
+    string? ClusterStatus,
+    string? CurrentState,
+    string? ServerRole,
+    int ServerSchemaVersion,
+    bool HasFixedPort,
+    int NumberOfCores,
+    double InstalledMemoryInGb,
+    double UsableMemoryInGb,
+    bool CertificatePresent,
+    OsInfoResult? Os);
+
+public sealed record OsInfoResult(
+    string? Type,
+    string? FullName,
+    string? Version,
+    string? BuildVersion,
+    bool Is64Bit);
+
+public sealed record ClusterNodeStatusResult(
+    string? Name,
+    bool Connected,
+    DateTime LastSent,
+    DateTime LastReply,
+    string? LastSentMessage,
+    long LastMatchingIndex,
+    string? ErrorDetails);
+
+public sealed record ClusterNodeResult(
+    string Tag,
+    string Type,
+    string? Url,
+    ClusterNodeStatusResult? Status,
+    ServerBuildResult? Server,
+    CurrentNodeResult? Self,
+    string? Error);
+
+public sealed record ClusterResult(
+    string? TopologyId,
+    long Etag,
+    string? Leader,
+    string? RespondingNodeTag,
+    string? RespondingNodeRole,
+    string? LastNodeId,
+    ClusterNodeResult[] Nodes);
+
+public sealed record GetClusterNodesResult(
+    ServerBuildResult Server,
+    CurrentNodeResult CurrentNode,
+    ClusterResult Cluster);
 
 public sealed record GetLogsConfigurationToolResult(JsonElement Configuration);
 

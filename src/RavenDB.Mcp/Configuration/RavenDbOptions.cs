@@ -7,4 +7,6 @@ public sealed record RavenDbOptions
     public string? CertificatePath { get; init; }
 
     public string? CertificatePassword { get; init; }
+
+    public string? ArtifactsPath { get; init; }
 }

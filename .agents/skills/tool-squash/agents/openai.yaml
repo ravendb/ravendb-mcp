@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tool Squash"
+  short_description: "Consolidate RavenDB MCP tools without losing diagnostic intent."
+  default_prompt: "Review the RavenDB MCP tool catalog and propose or implement disciplined tool consolidation."
