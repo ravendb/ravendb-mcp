@@ -173,7 +173,10 @@ public sealed partial class RavenDbAdminClient
                 token: cancellationToken);
             state = ToJson(operationState);
 
-            if (operationState.Status is OperationStatus.Completed or OperationStatus.Faulted or OperationStatus.Canceled)
+            // A non-existent/expired operation id returns a null state; keep polling until the
+            // timeout rather than dereferencing null (get_operation_state returns null gracefully).
+            if (operationState is not null
+                && operationState.Status is OperationStatus.Completed or OperationStatus.Faulted or OperationStatus.Canceled)
                 return new WaitForConditionResult("operation", databaseName, operationId, null, true, polls, state);
 
             await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
@@ -281,19 +284,24 @@ public sealed partial class RavenDbAdminClient
             ("to", to?.ToString("O")));
     }
 
-    public Task<DiagnosticArtifactResult> ExportTrafficWatch(
-        DateTime? from,
-        DateTime? to,
+    public async Task<DiagnosticTextSampleResult> SampleTrafficWatch(
+        int seconds,
         string? databaseName,
         CancellationToken cancellationToken)
     {
-        return SaveServerArtifact(
-            "traffic-watch",
+        // Traffic-watch live feed is a WebSocket endpoint; listen for the sample window.
+        var sample = await GetServerWebSocketSample(
             "/admin/traffic-watch",
+            seconds,
             cancellationToken,
-            ("from", from?.ToString("O")),
-            ("to", to?.ToString("O")),
             ("database", databaseName));
+
+        return new DiagnosticTextSampleResult(
+            "traffic_watch",
+            Math.Clamp(seconds, 1, 30),
+            sample.Text,
+            sample.Truncated,
+            sample.Limit);
     }
 
     public async Task<GetNotificationsResult> GetNotifications(

@@ -40,8 +40,8 @@ public static class StoragePerformanceTools
         return client.GetStorageEnvironmentDetails(databaseName, environmentName, environmentType, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_storage_tree_structure", ReadOnly = true)]
-    [Description("Dump the internal structure of one storage tree by name. treeKind selects btree (default) or fixed_size/fst. Returns RavenDB's raw structure text.")]
+    [McpServerTool(Name = "get_storage_tree_structure", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Dump the internal structure of one storage tree. Use a treeName from get_storage_trees (e.g. 'Docs', 'Etags'). treeKind selects btree (default) or fixed_size/fst. Returns RavenDB's raw structure (HTML) text.")]
     public static Task<GetStorageTreeStructureResult> GetStorageTreeStructure(
         RavenDbAdminClient client,
         string databaseName,
@@ -99,7 +99,7 @@ public static class StoragePerformanceTools
         return client.GetEncryptionBufferPoolStats(cancellationToken);
     }
 
-    [McpServerTool(Name = "sample_runtime_events", ReadOnly = true)]
+    [McpServerTool(Name = "sample_runtime_events", ReadOnly = true, UseStructuredContent = true)]
     [Description("Stream a few seconds (1-30) of runtime events. kind 'gc' samples GC events, otherwise allocations. Returns raw text with Truncated/Limit flags when capped.")]
     public static Task<SampleRuntimeEventsResult> SampleRuntimeEvents(
         RavenDbAdminClient client,
@@ -110,7 +110,7 @@ public static class StoragePerformanceTools
         return client.SampleRuntimeEvents(kind, seconds, cancellationToken);
     }
 
-    [McpServerTool(Name = "sample_thread_diagnostics", ReadOnly = true)]
+    [McpServerTool(Name = "sample_thread_diagnostics", ReadOnly = true, UseStructuredContent = true)]
     [Description("Thread diagnostics. kind 'contention' streams a few seconds (1-30) of lock-contention events; otherwise returns the current runaway-threads snapshot. Returns raw text with Truncated/Limit flags.")]
     public static Task<SampleThreadDiagnosticsResult> SampleThreadDiagnostics(
         RavenDbAdminClient client,

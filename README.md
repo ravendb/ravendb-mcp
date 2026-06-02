@@ -146,7 +146,7 @@ Replace `<repo>` with the absolute path to this checkout, and `RAVENDB_URLS` wit
 
 ## Tool Surface
 
-The v1 tools are read-only and use structured results. Tool names are `snake_case`.
+The v1 tools are read-only. Tool names are `snake_case`. Tools whose result is fully typed advertise a structured output schema (`UseStructuredContent`); tools that pass through RavenDB's large/variable JSON return it as a text content block instead of an opaque schema, so the tool list stays small and works with strict MCP clients.
 
 Current categories:
 

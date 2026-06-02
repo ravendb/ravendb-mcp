@@ -10,7 +10,6 @@ internal static class ToolCatalog
         "collect_server_info_package",
         "export_document_ids",
         "export_logs",
-        "export_traffic_watch",
         "find_missing_attachments",
         "get_backup_diagnostics",
         "get_backup_status",
@@ -75,6 +74,7 @@ internal static class ToolCatalog
         "sample_cluster_dashboard",
         "sample_runtime_events",
         "sample_thread_diagnostics",
+        "sample_traffic_watch",
         "scan_corrupted_document_ids",
         "wait_for_indexing",
         "wait_for_operation"

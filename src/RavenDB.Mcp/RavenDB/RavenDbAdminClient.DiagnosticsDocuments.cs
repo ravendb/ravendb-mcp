@@ -85,9 +85,17 @@ public sealed partial class RavenDbAdminClient
 
     public Task<DiagnosticArtifactResult> FindMissingAttachments(
         string databaseName,
+        string collectionName,
         CancellationToken cancellationToken)
     {
-        return SaveDatabaseArtifact(databaseName, "missing-attachments", "/debug/attachments/missing", cancellationToken);
+        ValidateName(collectionName, "Collection name", nameof(collectionName));
+
+        return SaveDatabaseArtifact(
+            databaseName,
+            "missing-attachments",
+            "/debug/attachments/missing",
+            cancellationToken,
+            ("collection", collectionName));
     }
 
     public async Task<GetRevisionsCollectionStatsResult> GetRevisionsCollectionStats(

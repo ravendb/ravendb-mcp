@@ -25,7 +25,7 @@ public static class DiagnosticsExpansionTools
         return client.GetClusterDiagnosticsOverview(cancellationToken);
     }
 
-    [McpServerTool(Name = "ping_cluster_node", ReadOnly = true)]
+    [McpServerTool(Name = "ping_cluster_node", ReadOnly = true, UseStructuredContent = true)]
     [Description("Ping a node URL's debug endpoint and measure latency. Returns status code, success, elapsed ms, and any error. Use to check a specific node's reachability.")]
     public static Task<PingClusterNodeResult> PingClusterNode(
         RavenDbAdminClient client,
@@ -35,7 +35,7 @@ public static class DiagnosticsExpansionTools
         return client.PingClusterNode(url, cancellationToken);
     }
 
-    [McpServerTool(Name = "sample_cluster_dashboard", ReadOnly = true)]
+    [McpServerTool(Name = "sample_cluster_dashboard", ReadOnly = true, UseStructuredContent = true)]
     [Description("Stream a few seconds (1-30) of the live cluster dashboard feed (throughput, requests, indexing, storage). Returns raw text with Truncated/Limit flags when capped.")]
     public static Task<DiagnosticTextSampleResult> SampleClusterDashboard(
         RavenDbAdminClient client,
@@ -170,7 +170,7 @@ public static class DiagnosticsExpansionTools
         return client.GetTrafficWatchConfiguration(cancellationToken);
     }
 
-    [McpServerTool(Name = "export_logs", ReadOnly = true)]
+    [McpServerTool(Name = "export_logs", ReadOnly = true, UseStructuredContent = true)]
     [Description("Download server logs for an optional time range to a local artifact file. Returns the artifact path, content type, and byte size (not the log contents inline).")]
     public static Task<DiagnosticArtifactResult> ExportLogs(
         RavenDbAdminClient client,
@@ -181,16 +181,15 @@ public static class DiagnosticsExpansionTools
         return client.ExportLogs(from, to, cancellationToken);
     }
 
-    [McpServerTool(Name = "export_traffic_watch", ReadOnly = true)]
-    [Description("Download captured traffic-watch data (optional time range and database) to a local artifact file. Returns the artifact path, content type, and byte size.")]
-    public static Task<DiagnosticArtifactResult> ExportTrafficWatch(
+    [McpServerTool(Name = "sample_traffic_watch", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Listen to the live traffic-watch feed for a few seconds (1-30) and return what was captured (HTTP/TCP requests as they happen). Optionally filter to one database. Returns raw text with Truncated/Limit flags when capped. The capture window is set by 'seconds'.")]
+    public static Task<DiagnosticTextSampleResult> SampleTrafficWatch(
         RavenDbAdminClient client,
-        DateTime? from,
-        DateTime? to,
+        int seconds,
         string? databaseName,
         CancellationToken cancellationToken)
     {
-        return client.ExportTrafficWatch(from, to, databaseName, cancellationToken);
+        return client.SampleTrafficWatch(seconds, databaseName, cancellationToken);
     }
 
     [McpServerTool(Name = "get_notifications", ReadOnly = true)]
@@ -203,7 +202,7 @@ public static class DiagnosticsExpansionTools
         return client.GetNotifications(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "sample_admin_logs", ReadOnly = true)]
+    [McpServerTool(Name = "sample_admin_logs", ReadOnly = true, UseStructuredContent = true)]
     [Description("Stream a few seconds (1-30) of the live server log feed. Returns raw text with Truncated/Limit flags when capped. Use for a quick look at current logging.")]
     public static Task<DiagnosticTextSampleResult> SampleAdminLogs(
         RavenDbAdminClient client,
@@ -235,7 +234,7 @@ public static class DiagnosticsExpansionTools
         return client.GetHugeDocumentsReport(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "scan_corrupted_document_ids", ReadOnly = true)]
+    [McpServerTool(Name = "scan_corrupted_document_ids", ReadOnly = true, UseStructuredContent = true)]
     [Description("Scan a database for corrupted document ids and write the result to a local artifact file. Returns the artifact path, content type, and byte size.")]
     public static Task<DiagnosticArtifactResult> ScanCorruptedDocumentIds(
         RavenDbAdminClient client,
@@ -258,7 +257,7 @@ public static class DiagnosticsExpansionTools
         return client.GetDocumentRevisions(databaseName, documentId, start, pageSize, cancellationToken);
     }
 
-    [McpServerTool(Name = "export_document_ids", ReadOnly = true)]
+    [McpServerTool(Name = "export_document_ids", ReadOnly = true, UseStructuredContent = true)]
     [Description("Export document ids (metadata-only, optional startsWith prefix, pageSize 1-10000) to a local artifact file. Returns the artifact path, content type, and byte size (ids only, no document bodies).")]
     public static Task<DiagnosticArtifactResult> ExportDocumentIds(
         RavenDbAdminClient client,
@@ -270,14 +269,15 @@ public static class DiagnosticsExpansionTools
         return client.ExportDocumentIds(databaseName, startsWith, pageSize, cancellationToken);
     }
 
-    [McpServerTool(Name = "find_missing_attachments", ReadOnly = true)]
-    [Description("Scan a database for attachments referenced by documents but missing from storage, writing results to a local artifact file. Returns the artifact path, content type, and byte size.")]
+    [McpServerTool(Name = "find_missing_attachments", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Scan one collection for attachments referenced by documents but missing from storage, writing results to a local artifact file. 'collectionName' is required (e.g. 'Users'). Returns the artifact path, content type, and byte size.")]
     public static Task<DiagnosticArtifactResult> FindMissingAttachments(
         RavenDbAdminClient client,
         string databaseName,
+        string collectionName,
         CancellationToken cancellationToken)
     {
-        return client.FindMissingAttachments(databaseName, cancellationToken);
+        return client.FindMissingAttachments(databaseName, collectionName, cancellationToken);
     }
 
     [McpServerTool(Name = "get_revisions_collection_stats", ReadOnly = true)]
@@ -302,7 +302,7 @@ public static class DiagnosticsExpansionTools
         return client.QueryMetadataOnly(databaseName, query, pageSize, cancellationToken);
     }
 
-    [McpServerTool(Name = "collect_server_info_package", ReadOnly = true)]
+    [McpServerTool(Name = "collect_server_info_package", ReadOnly = true, UseStructuredContent = true)]
     [Description("Download RavenDB's full server info/debug package (zip) to a local artifact file. Returns the artifact path, content type, and byte size. Heavy; for deep support investigations.")]
     public static Task<DiagnosticArtifactResult> CollectServerInfoPackage(
         RavenDbAdminClient client,
@@ -311,7 +311,7 @@ public static class DiagnosticsExpansionTools
         return client.CollectServerInfoPackage(cancellationToken);
     }
 
-    [McpServerTool(Name = "collect_cluster_info_package", ReadOnly = true)]
+    [McpServerTool(Name = "collect_cluster_info_package", ReadOnly = true, UseStructuredContent = true)]
     [Description("Download RavenDB's cluster-wide info/debug package (zip) to a local artifact file. Returns the artifact path, content type, and byte size. Heavy; for deep support investigations.")]
     public static Task<DiagnosticArtifactResult> CollectClusterInfoPackage(
         RavenDbAdminClient client,
@@ -320,7 +320,7 @@ public static class DiagnosticsExpansionTools
         return client.CollectClusterInfoPackage(cancellationToken);
     }
 
-    [McpServerTool(Name = "collect_database_info_package", ReadOnly = true)]
+    [McpServerTool(Name = "collect_database_info_package", ReadOnly = true, UseStructuredContent = true)]
     [Description("Download one database's info/debug package (zip) to a local artifact file. Returns the artifact path, content type, and byte size.")]
     public static Task<DiagnosticArtifactResult> CollectDatabaseInfoPackage(
         RavenDbAdminClient client,

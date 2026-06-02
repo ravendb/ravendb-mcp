@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DatabaseTools
 {
-    [McpServerTool(Name = "list_databases", ReadOnly = true)]
+    [McpServerTool(Name = "list_databases", ReadOnly = true, UseStructuredContent = true)]
     [Description("List all database names in the cluster. Call first to discover targets.")]
     public static Task<ListDatabasesResult> ListDatabases(
         RavenDbAdminClient client,

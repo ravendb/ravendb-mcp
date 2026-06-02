@@ -17,7 +17,7 @@ public static class ServerTools
         return client.GetServerInfo(cancellationToken);
     }
 
-    [McpServerTool(Name = "get_cluster_nodes", ReadOnly = true)]
+    [McpServerTool(Name = "get_cluster_nodes", ReadOnly = true, UseStructuredContent = true)]
     [Description("Cluster topology with per-node tag/type/url/status. Build and self info are populated for the contacted node only. Use to see cluster membership, leader, and node reachability.")]
     public static Task<GetClusterNodesResult> GetClusterNodes(
         RavenDbAdminClient client,

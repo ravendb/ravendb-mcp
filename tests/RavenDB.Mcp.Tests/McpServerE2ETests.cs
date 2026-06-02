@@ -383,10 +383,18 @@ internal sealed class McpStdioClient : IAsyncDisposable
 
         var result = response.RootElement.GetProperty("result");
 
-        if (!result.TryGetProperty("structuredContent", out var structuredContent))
-            throw new InvalidOperationException(response.RootElement.GetRawText());
+        // Typed-result tools return structuredContent; opaque-JsonElement tools return the JSON
+        // payload as a text content block (UseStructuredContent is hybrid — see ADR).
+        if (result.TryGetProperty("structuredContent", out var structuredContent))
+            return JsonDocument.Parse(structuredContent.GetRawText());
 
-        return JsonDocument.Parse(structuredContent.GetRawText());
+        if (result.TryGetProperty("content", out var content)
+            && content.ValueKind == JsonValueKind.Array
+            && content.GetArrayLength() > 0
+            && content[0].TryGetProperty("text", out var text))
+            return JsonDocument.Parse(text.GetString()!);
+
+        throw new InvalidOperationException(response.RootElement.GetRawText());
     }
 
     public async Task<JsonDocument> Request(string method, object? parameters, CancellationToken cancellationToken)
