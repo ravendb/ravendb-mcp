@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class IndexTools
 {
-    [McpServerTool(Name = "get_indexing_overview", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_indexing_overview", ReadOnly = true)]
     [Description("One-call indexing snapshot for a database: index summaries, stats, errors, indexing status, performance, progress, suggested merges, and total indexing time.")]
     public static Task<GetIndexingOverviewResult> GetIndexingOverview(
         RavenDbAdminClient client,
@@ -18,7 +18,7 @@ public static class IndexTools
         return client.GetIndexingOverview(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_index", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_index", ReadOnly = true)]
     [Description("Full definition of one index: maps/reduce, fields, configuration, lock mode, and deployment mode.")]
     public static Task<GetIndexResult> GetIndex(
         RavenDbAdminClient client,
@@ -29,7 +29,7 @@ public static class IndexTools
         return client.GetIndex(databaseName, indexName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_index_terms", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_index_terms", ReadOnly = true)]
     [Description("Distinct indexed terms for one field of an index (paged from fromValue). Use to inspect how a field is tokenized/indexed.")]
     public static Task<GetIndexTermsResult> GetIndexTerms(
         RavenDbAdminClient client,

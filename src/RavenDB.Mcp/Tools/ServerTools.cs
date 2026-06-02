@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class ServerTools
 {
-    [McpServerTool(Name = "get_server_info", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_server_info", ReadOnly = true)]
     [Description("Build/version and contacted-node info. Cheap first call. Returns product/build/commit/full version and the node's NodeInfo (server id, state, role, cores, memory, OS).")]
     public static Task<GetServerInfoResult> GetServerInfo(
         RavenDbAdminClient client,
@@ -17,7 +17,7 @@ public static class ServerTools
         return client.GetServerInfo(cancellationToken);
     }
 
-    [McpServerTool(Name = "get_cluster_nodes", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_cluster_nodes", ReadOnly = true)]
     [Description("Cluster topology with per-node tag/type/url/status. Build and self info are populated for the contacted node only. Use to see cluster membership, leader, and node reachability.")]
     public static Task<GetClusterNodesResult> GetClusterNodes(
         RavenDbAdminClient client,
@@ -26,7 +26,7 @@ public static class ServerTools
         return client.GetClusterNodes(cancellationToken);
     }
 
-    [McpServerTool(Name = "get_logs_configuration", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_logs_configuration", ReadOnly = true)]
     [Description("Current server logging configuration: log mode/levels, paths, and retention settings.")]
     public static Task<GetLogsConfigurationToolResult> GetLogsConfiguration(
         RavenDbAdminClient client,
@@ -35,7 +35,7 @@ public static class ServerTools
         return client.GetLogsConfiguration(cancellationToken);
     }
 
-    [McpServerTool(Name = "get_server_wide_client_configuration", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_server_wide_client_configuration", ReadOnly = true)]
     [Description("Server-wide client configuration RavenDB pushes to all clients: read balance, load-balancing, and max requests per session.")]
     public static Task<GetServerWideClientConfigurationResult> GetServerWideClientConfiguration(
         RavenDbAdminClient client,

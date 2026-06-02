@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class OperationsTools
 {
-    [McpServerTool(Name = "get_operation_state", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_operation_state", ReadOnly = true)]
     [Description("State of a long-running server operation by id: status (InProgress/Completed/Faulted/Canceled), progress, and result.")]
     public static Task<GetOperationStateResult> GetOperationState(
         RavenDbAdminClient client,

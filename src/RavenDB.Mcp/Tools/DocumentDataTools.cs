@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DocumentDataTools
 {
-    [McpServerTool(Name = "get_document", ReadOnly = true, UseStructuredContent = true, Idempotent = true, Destructive = false, OpenWorld = true)]
+    [McpServerTool(Name = "get_document", ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = true)]
     [Description("Read one document by id, including its @metadata. Returns Found=false (not an error) when the id does not exist. Returns real document content.")]
     public static Task<GetDocumentResult> GetDocument(
         RavenDbAdminClient client,
@@ -19,7 +19,7 @@ public static class DocumentDataTools
         return client.GetDocument(databaseName, id, cancellationToken);
     }
 
-    [McpServerTool(Name = "run_query", ReadOnly = true, UseStructuredContent = true, Idempotent = true, Destructive = false, OpenWorld = true)]
+    [McpServerTool(Name = "run_query", ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = true)]
     [Description("Run a read-only RQL query and return result rows plus query metadata (TotalResults, IndexName, IsStale, DurationInMs). Paged via start/pageSize (1-128). Mutating UPDATE/patch queries are rejected. Returns real document data.")]
     public static Task<RunQueryResult> RunQuery(
         RavenDbAdminClient client,

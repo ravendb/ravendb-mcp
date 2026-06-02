@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DatabaseActivityTools
 {
-    [McpServerTool(Name = "get_subscriptions", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_subscriptions", ReadOnly = true)]
     [Description("All data subscriptions defined on a database: name, query, and configuration per subscription.")]
     public static Task<GetSubscriptionsResult> GetSubscriptions(
         RavenDbAdminClient client,
@@ -18,7 +18,7 @@ public static class DatabaseActivityTools
         return client.GetSubscriptions(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_subscription_state", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_subscription_state", ReadOnly = true)]
     [Description("Runtime state of one subscription: change vector / processing position and last-batch info.")]
     public static Task<GetSubscriptionStateResult> GetSubscriptionState(
         RavenDbAdminClient client,
@@ -29,7 +29,7 @@ public static class DatabaseActivityTools
         return client.GetSubscriptionState(databaseName, subscriptionName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_database_tcp_info", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_database_tcp_info", ReadOnly = true)]
     [Description("TCP connection info a client/node would use to reach this database on a given node tag (URLs, port, certificate requirement).")]
     public static Task<GetDatabaseTcpInfoResult> GetDatabaseTcpInfo(
         RavenDbAdminClient client,
@@ -40,7 +40,7 @@ public static class DatabaseActivityTools
         return client.GetDatabaseTcpInfo(databaseName, nodeTag, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_identities", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_identities", ReadOnly = true)]
     [Description("Identity counters for a database (the server-side sequence values behind identity document ids).")]
     public static Task<GetIdentitiesResult> GetIdentities(
         RavenDbAdminClient client,

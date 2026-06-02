@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class StoragePerformanceTools
 {
-    [McpServerTool(Name = "get_storage_overview", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_storage_overview", ReadOnly = true)]
     [Description("Per-database storage report plus all-environments report: tree sizes, allocated vs used bytes, and per-environment breakdown.")]
     public static Task<GetStorageOverviewResult> GetStorageOverview(
         RavenDbAdminClient client,
@@ -18,7 +18,7 @@ public static class StoragePerformanceTools
         return client.GetStorageOverview(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_storage_trees", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_storage_trees", ReadOnly = true)]
     [Description("Low-level storage tree listing for a database's Voron environment: tree names, types, and page/size details.")]
     public static Task<GetStorageTreesResult> GetStorageTrees(
         RavenDbAdminClient client,
@@ -28,7 +28,7 @@ public static class StoragePerformanceTools
         return client.GetStorageTrees(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_storage_environment_details", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_storage_environment_details", ReadOnly = true)]
     [Description("Deep storage detail for one environment (Documents/Index/Configuration/System): report, scratch-buffer info, and free-space snapshot. Defaults to the Documents environment of the database.")]
     public static Task<GetStorageEnvironmentDetailsResult> GetStorageEnvironmentDetails(
         RavenDbAdminClient client,
@@ -40,7 +40,7 @@ public static class StoragePerformanceTools
         return client.GetStorageEnvironmentDetails(databaseName, environmentName, environmentType, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_storage_tree_structure", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_storage_tree_structure", ReadOnly = true)]
     [Description("Dump the internal structure of one storage tree by name. treeKind selects btree (default) or fixed_size/fst. Returns RavenDB's raw structure text.")]
     public static Task<GetStorageTreeStructureResult> GetStorageTreeStructure(
         RavenDbAdminClient client,
@@ -52,7 +52,7 @@ public static class StoragePerformanceTools
         return client.GetStorageTreeStructure(databaseName, treeName, treeKind, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_storage_compression_dictionaries", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_storage_compression_dictionaries", ReadOnly = true)]
     [Description("Document-compression dictionaries for a database: dictionary ids and sizes used by RavenDB's storage compression.")]
     public static Task<GetStorageCompressionDictionariesResult> GetStorageCompressionDictionaries(
         RavenDbAdminClient client,
@@ -62,7 +62,7 @@ public static class StoragePerformanceTools
         return client.GetStorageCompressionDictionaries(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_server_resources", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_server_resources", ReadOnly = true)]
     [Description("Server resource snapshot: metrics, CPU, IO, GC, OS memory, process, and thread stats. Use for a quick host-health read.")]
     public static Task<GetServerResourcesResult> GetServerResources(
         RavenDbAdminClient client,
@@ -71,7 +71,7 @@ public static class StoragePerformanceTools
         return client.GetServerResources(cancellationToken);
     }
 
-    [McpServerTool(Name = "get_io_stats", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_io_stats", ReadOnly = true)]
     [Description("Disk IO metrics. Omit databaseName for server-wide IO; provide it for that database's IO. Returns read/write rates and latencies per environment/file.")]
     public static Task<GetIoStatsResult> GetIoStats(
         RavenDbAdminClient client,
@@ -81,7 +81,7 @@ public static class StoragePerformanceTools
         return client.GetIoStats(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_low_memory_log", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_low_memory_log", ReadOnly = true)]
     [Description("Server low-memory event log: recent low-memory triggers and the actions RavenDB took. Use to diagnose memory pressure.")]
     public static Task<GetLowMemoryLogResult> GetLowMemoryLog(
         RavenDbAdminClient client,
@@ -90,7 +90,7 @@ public static class StoragePerformanceTools
         return client.GetLowMemoryLog(cancellationToken);
     }
 
-    [McpServerTool(Name = "get_encryption_buffer_pool_stats", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_encryption_buffer_pool_stats", ReadOnly = true)]
     [Description("Encryption buffer-pool stats (relevant for encrypted databases): allocated/used secure buffers.")]
     public static Task<GetEncryptionBufferPoolStatsResult> GetEncryptionBufferPoolStats(
         RavenDbAdminClient client,
@@ -99,7 +99,7 @@ public static class StoragePerformanceTools
         return client.GetEncryptionBufferPoolStats(cancellationToken);
     }
 
-    [McpServerTool(Name = "sample_runtime_events", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "sample_runtime_events", ReadOnly = true)]
     [Description("Stream a few seconds (1-30) of runtime events. kind 'gc' samples GC events, otherwise allocations. Returns raw text with Truncated/Limit flags when capped.")]
     public static Task<SampleRuntimeEventsResult> SampleRuntimeEvents(
         RavenDbAdminClient client,
@@ -110,7 +110,7 @@ public static class StoragePerformanceTools
         return client.SampleRuntimeEvents(kind, seconds, cancellationToken);
     }
 
-    [McpServerTool(Name = "sample_thread_diagnostics", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "sample_thread_diagnostics", ReadOnly = true)]
     [Description("Thread diagnostics. kind 'contention' streams a few seconds (1-30) of lock-contention events; otherwise returns the current runaway-threads snapshot. Returns raw text with Truncated/Limit flags.")]
     public static Task<SampleThreadDiagnosticsResult> SampleThreadDiagnostics(
         RavenDbAdminClient client,
@@ -121,7 +121,7 @@ public static class StoragePerformanceTools
         return client.SampleThreadDiagnostics(kind, seconds, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_stack_traces", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_stack_traces", ReadOnly = true)]
     [Description("Managed stack traces of the server's threads. Use to investigate hangs or busy threads.")]
     public static Task<GetStackTracesResult> GetStackTraces(
         RavenDbAdminClient client,
@@ -130,7 +130,7 @@ public static class StoragePerformanceTools
         return client.GetStackTraces(cancellationToken);
     }
 
-    [McpServerTool(Name = "get_script_runners", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_script_runners", ReadOnly = true)]
     [Description("JavaScript script-runner pool stats (patches, ETL/subscription scripts). Omit databaseName for server-wide, or pass it for one database.")]
     public static Task<GetScriptRunnersResult> GetScriptRunners(
         RavenDbAdminClient client,
@@ -140,7 +140,7 @@ public static class StoragePerformanceTools
         return client.GetScriptRunners(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_tcp_stats", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_tcp_stats", ReadOnly = true)]
     [Description("Server TCP statistics: connection counts and bytes in/out across the server's TCP endpoints.")]
     public static Task<GetTcpStatsResult> GetTcpStats(
         RavenDbAdminClient client,
@@ -149,7 +149,7 @@ public static class StoragePerformanceTools
         return client.GetTcpStats(cancellationToken);
     }
 
-    [McpServerTool(Name = "list_tcp_connections", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "list_tcp_connections", ReadOnly = true)]
     [Description("Active TCP connections. Omit databaseName for server-wide active connections; pass it for that database's TCP connection info.")]
     public static Task<ListTcpConnectionsResult> ListTcpConnections(
         RavenDbAdminClient client,

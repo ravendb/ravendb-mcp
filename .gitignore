@@ -9,5 +9,6 @@ docs/
 docs.zip
 
 test_e2e_temp_local/
+.mcp.json
 
 *.user

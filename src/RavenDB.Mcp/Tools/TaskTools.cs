@@ -9,7 +9,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class TaskTools
 {
-    [McpServerTool(Name = "get_database_tasks", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_database_tasks", ReadOnly = true)]
     [Description("All ongoing tasks for a database in one call: backups, ETL, replication, and subscriptions (from the database record + subscription state).")]
     public static Task<GetDatabaseTasksResult> GetDatabaseTasks(
         RavenDbAdminClient client,
@@ -19,7 +19,7 @@ public static class TaskTools
         return client.GetDatabaseTasks(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_backup_tasks", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_backup_tasks", ReadOnly = true)]
     [Description("Periodic-backup task definitions for a database (schedules, destinations, and settings from the database record).")]
     public static Task<GetBackupTasksResult> GetBackupTasks(
         RavenDbAdminClient client,
@@ -29,7 +29,7 @@ public static class TaskTools
         return client.GetBackupTasks(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_backup_status", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_backup_status", ReadOnly = true)]
     [Description("Last/most-recent run status of one periodic-backup task by id: timings, durations, sizes, and any error.")]
     public static Task<GetBackupStatusResult> GetBackupStatus(
         RavenDbAdminClient client,
@@ -40,7 +40,7 @@ public static class TaskTools
         return client.GetBackupStatus(databaseName, taskId, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_ongoing_task_info", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_ongoing_task_info", ReadOnly = true)]
     [Description("Detailed runtime info for one ongoing task by id and type (e.g. Backup, Replication, RavenEtl, SqlEtl, Subscription): responsible node, connection status, and task-specific state.")]
     public static Task<GetOngoingTaskInfoResult> GetOngoingTaskInfo(
         RavenDbAdminClient client,
@@ -52,7 +52,7 @@ public static class TaskTools
         return client.GetOngoingTaskInfo(databaseName, taskId, taskType, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_etl_tasks", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_etl_tasks", ReadOnly = true)]
     [Description("ETL task definitions for a database (RavenDB/SQL/OLAP/Elasticsearch/Queue ETL configuration from the database record).")]
     public static Task<GetEtlTasksResult> GetEtlTasks(
         RavenDbAdminClient client,
@@ -62,7 +62,7 @@ public static class TaskTools
         return client.GetEtlTasks(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_etl_task_info", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_etl_task_info", ReadOnly = true)]
     [Description("Detailed runtime info for one ETL task by id and type: responsible node, connection status, and ETL-specific state.")]
     public static Task<GetEtlTaskInfoResult> GetEtlTaskInfo(
         RavenDbAdminClient client,

@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class ReplicationTools
 {
-    [McpServerTool(Name = "get_replication_tasks_details", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_replication_tasks_details", ReadOnly = true)]
     [Description("Replication diagnostics for a database: configured replication tasks, performance, active connections, conflicts, outgoing/incoming failures, rejections, reconnect queue, and progress.")]
     public static Task<GetReplicationTasksDetailsResult> GetReplicationTasksDetails(
         RavenDbAdminClient client,
