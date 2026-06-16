@@ -39,23 +39,33 @@ public static class DatabaseTools
             DatabaseStatsInclude.Summary, DatabaseStatsInclude.Collections, DatabaseStatsInclude.Indexing);
         var result = new Dictionary<string, object?>();
 
-        if (sections.Contains(DatabaseStatsInclude.Summary)) result["summary"] = await client.GetDatabaseStats(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Detailed)) result["detailed"] = await client.GetDetailedDatabaseStats(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Collections)) result["collections"] = await client.GetCollectionOverview(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Indexing)) result["indexing"] = await client.GetIndexingOverview(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.IndexErrors)) result["indexErrors"] = await client.GetIndexErrors(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.IndexPerformance)) result["indexPerformance"] = await client.GetIndexPerformance(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Storage)) result["storage"] = await client.GetStorageOverview(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Tombstones)) result["tombstones"] = await client.GetTombstonesState(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Metrics)) result["metrics"] = await client.GetDatabaseMetrics(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Identities)) result["identities"] = await client.GetIdentities(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Revisions)) result["revisions"] = await client.GetRevisionsCollectionStats(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Sharding)) result["sharding"] = await client.GetShardingState(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.HugeDocuments)) result["hugeDocuments"] = await client.GetHugeDocumentsReport(databaseName, cancellationToken);
-        if (sections.Contains(DatabaseStatsInclude.Io)) result["io"] = await client.GetIoStats(databaseName, cancellationToken);
+        foreach (var (section, key, fetch) in StatsSections)
+            if (sections.Contains(section))
+                result[key] = await fetch(client, databaseName, cancellationToken);
 
         return result;
     }
+
+    // Each stats section maps to a result key and the client read that produces it. Declared once
+    // and run in order for the selected sections — keeps the tool a thin, data-driven dispatcher.
+    private static readonly (DatabaseStatsInclude Section, string Key,
+        Func<RavenDbAdminClient, string, CancellationToken, Task<object?>> Fetch)[] StatsSections =
+    [
+        (DatabaseStatsInclude.Summary,          "summary",          async (c, db, ct) => await c.GetDatabaseStats(db, ct)),
+        (DatabaseStatsInclude.Detailed,         "detailed",         async (c, db, ct) => await c.GetDetailedDatabaseStats(db, ct)),
+        (DatabaseStatsInclude.Collections,      "collections",      async (c, db, ct) => await c.GetCollectionOverview(db, ct)),
+        (DatabaseStatsInclude.Indexing,         "indexing",         async (c, db, ct) => await c.GetIndexingOverview(db, ct)),
+        (DatabaseStatsInclude.IndexErrors,      "indexErrors",      async (c, db, ct) => await c.GetIndexErrors(db, ct)),
+        (DatabaseStatsInclude.IndexPerformance, "indexPerformance", async (c, db, ct) => await c.GetIndexPerformance(db, ct)),
+        (DatabaseStatsInclude.Storage,          "storage",          async (c, db, ct) => await c.GetStorageOverview(db, ct)),
+        (DatabaseStatsInclude.Tombstones,       "tombstones",       async (c, db, ct) => await c.GetTombstonesState(db, ct)),
+        (DatabaseStatsInclude.Metrics,          "metrics",          async (c, db, ct) => await c.GetDatabaseMetrics(db, ct)),
+        (DatabaseStatsInclude.Identities,       "identities",       async (c, db, ct) => await c.GetIdentities(db, ct)),
+        (DatabaseStatsInclude.Revisions,        "revisions",        async (c, db, ct) => await c.GetRevisionsCollectionStats(db, ct)),
+        (DatabaseStatsInclude.Sharding,         "sharding",         async (c, db, ct) => await c.GetShardingState(db, ct)),
+        (DatabaseStatsInclude.HugeDocuments,    "hugeDocuments",    async (c, db, ct) => await c.GetHugeDocumentsReport(db, ct)),
+        (DatabaseStatsInclude.Io,               "io",               async (c, db, ct) => await c.GetIoStats(db, ct)),
+    ];
 
     // Feature toggles/policies live in the database record; one fetch covers all of them.
     private static readonly (DatabaseConfigSection Section, string RecordKey, string Label)[] FeatureSections =
