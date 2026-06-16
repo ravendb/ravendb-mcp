@@ -17,28 +17,6 @@ public static class DiagnosticsExpansionTools
         return client.SampleClusterDashboard(seconds, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_index_staleness", ReadOnly = true)]
-    [Description("Whether one index is stale and why: the staleness reasons RavenDB reports (pending documents/tombstones to index).")]
-    public static Task<GetIndexStalenessResult> GetIndexStaleness(
-        RavenDbAdminClient client,
-        string databaseName,
-        string indexName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetIndexStaleness(databaseName, indexName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_index_debug_details", ReadOnly = true)]
-    [Description("Low-level debug detail for one index: internal debug view, metadata, and definition history. Each section is availability-wrapped.")]
-    public static Task<GetIndexDebugDetailsResult> GetIndexDebugDetails(
-        RavenDbAdminClient client,
-        string databaseName,
-        string indexName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetIndexDebugDetails(databaseName, indexName, cancellationToken);
-    }
-
     [McpServerTool(Name = "wait_for_completion", ReadOnly = true)]
     [Description("Block until a condition is met or the timeout elapses. condition=Operation polls a server operation (by operationId) until a terminal state (Completed/Faulted/Canceled); condition=Indexing waits until the database has no stale indexes. Returns completion flag, poll count, and last state.")]
     public static Task<WaitForConditionResult> WaitForCompletion(

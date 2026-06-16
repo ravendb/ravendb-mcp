@@ -55,6 +55,28 @@ public enum ResourceInclude
     ScriptRunners
 }
 
+/// <summary>Per-index views returned by <c>get_index</c>.</summary>
+public enum IndexInclude
+{
+    /// <summary>Index definition (maps/reduce, fields, configuration, lock/deployment mode).</summary>
+    Definition,
+
+    /// <summary>Whether the index is stale and why.</summary>
+    Staleness,
+
+    /// <summary>Internal debug view, metadata, and definition history.</summary>
+    Debug,
+
+    /// <summary>Distinct indexed terms for a field (requires fieldName).</summary>
+    Terms,
+
+    /// <summary>This index's indexing errors.</summary>
+    Errors,
+
+    /// <summary>This index's performance statistics.</summary>
+    Performance
+}
+
 /// <summary>Storage deep-dive sections returned by <c>inspect_storage</c>.</summary>
 public enum StorageFacet
 {
