@@ -97,27 +97,24 @@ public static class DiagnosticsExpansionTools
         return client.GetTransactionDiagnostics(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "wait_for_operation", ReadOnly = true)]
-    [Description("Poll a server operation until it reaches a terminal state (Completed/Faulted/Canceled) or the timeout (1-300s) elapses. Returns completion flag, poll count, and last operation state.")]
-    public static Task<WaitForConditionResult> WaitForOperation(
+    [McpServerTool(Name = "wait_for_completion", ReadOnly = true)]
+    [Description("Block until a condition is met or the timeout elapses. condition=Operation polls a server operation (by operationId) until a terminal state (Completed/Faulted/Canceled); condition=Indexing waits until the database has no stale indexes. Returns completion flag, poll count, and last state.")]
+    public static Task<WaitForConditionResult> WaitForCompletion(
         RavenDbAdminClient client,
-        string databaseName,
-        long operationId,
-        int timeoutSeconds,
+        [Description("Database to target.")] string databaseName,
+        [Description("What to wait for: Operation or Indexing.")] WaitCondition condition,
+        [Description("Max seconds to wait, 1-300.")] int timeoutSeconds,
+        [Description("Server operation id — required when condition is Operation.")] long? operationId,
         CancellationToken cancellationToken)
     {
-        return client.WaitForOperation(databaseName, operationId, timeoutSeconds, cancellationToken);
-    }
-
-    [McpServerTool(Name = "wait_for_indexing", ReadOnly = true)]
-    [Description("Block until the database has no stale indexes or the timeout (1-300s) elapses. Returns completion flag, poll count, and the last DatabaseStatistics.")]
-    public static Task<WaitForConditionResult> WaitForIndexing(
-        RavenDbAdminClient client,
-        string databaseName,
-        int timeoutSeconds,
-        CancellationToken cancellationToken)
-    {
-        return client.WaitForIndexing(databaseName, timeoutSeconds, cancellationToken);
+        return condition switch
+        {
+            WaitCondition.Operation => operationId is { } id
+                ? client.WaitForOperation(databaseName, id, timeoutSeconds, cancellationToken)
+                : throw new ArgumentException("operationId is required when condition is Operation.", nameof(operationId)),
+            WaitCondition.Indexing => client.WaitForIndexing(databaseName, timeoutSeconds, cancellationToken),
+            _ => throw new ArgumentOutOfRangeException(nameof(condition))
+        };
     }
 
     [McpServerTool(Name = "get_document_conflicts", ReadOnly = true)]

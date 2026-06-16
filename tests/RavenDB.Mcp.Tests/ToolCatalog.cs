@@ -76,7 +76,6 @@ internal static class ToolCatalog
         "sample_thread_diagnostics",
         "sample_traffic_watch",
         "scan_corrupted_document_ids",
-        "wait_for_indexing",
-        "wait_for_operation"
+        "wait_for_completion"
     ];
 }
