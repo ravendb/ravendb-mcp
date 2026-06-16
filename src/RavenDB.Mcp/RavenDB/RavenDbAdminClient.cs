@@ -131,16 +131,6 @@ public sealed partial class RavenDbAdminClient(
         return GetText(BuildServerUrl(path), cancellationToken);
     }
 
-    private Task<string> GetDatabaseText(
-        string databaseName,
-        string path,
-        CancellationToken cancellationToken,
-        params (string Name, string? Value)[] query)
-    {
-        ValidateDatabaseName(databaseName);
-        return GetText(BuildDatabaseUrl(databaseName, path, query), cancellationToken);
-    }
-
     private async Task<JsonElement> GetJson(string url, CancellationToken cancellationToken)
     {
         var content = await GetText(url, cancellationToken);

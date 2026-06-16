@@ -55,6 +55,19 @@ public enum ResourceInclude
     ScriptRunners
 }
 
+/// <summary>Storage deep-dive sections returned by <c>inspect_storage</c>.</summary>
+public enum StorageFacet
+{
+    /// <summary>Voron storage tree listing (names, types, sizes).</summary>
+    Trees,
+
+    /// <summary>One environment's report + scratch buffers + free space (defaults to Documents).</summary>
+    Environment,
+
+    /// <summary>Document-compression dictionaries (ids and sizes).</summary>
+    CompressionDictionaries
+}
+
 /// <summary>Server-scoped configuration sections returned by <c>get_server_config</c>.</summary>
 public enum ServerConfigSection
 {

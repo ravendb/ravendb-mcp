@@ -44,27 +44,6 @@ public sealed partial class RavenDbAdminClient
                 ("type", type)));
     }
 
-    public async Task<GetStorageTreeStructureResult> GetStorageTreeStructure(
-        string databaseName,
-        string treeName,
-        string? treeKind,
-        CancellationToken cancellationToken)
-    {
-        ValidateName(treeName, "Tree name", nameof(treeName));
-
-        var kind = string.IsNullOrWhiteSpace(treeKind) ? "btree" : treeKind;
-        var path = kind.Equals("fixed_size", StringComparison.OrdinalIgnoreCase) ||
-                   kind.Equals("fst", StringComparison.OrdinalIgnoreCase)
-            ? "/debug/storage/fst-structure"
-            : "/debug/storage/btree-structure";
-
-        return new GetStorageTreeStructureResult(
-            databaseName,
-            treeName,
-            kind,
-            await GetDatabaseText(databaseName, path, cancellationToken, ("name", treeName)));
-    }
-
     public async Task<GetStorageCompressionDictionariesResult> GetStorageCompressionDictionaries(
         string databaseName,
         CancellationToken cancellationToken)

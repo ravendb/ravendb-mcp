@@ -99,10 +99,6 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
         Assert.Equal(JsonValueKind.Object, environment.ScratchBuffers.ValueKind);
         Assert.Equal(JsonValueKind.Object, environment.FreeSpace.ValueKind);
 
-        var tree = await client.GetStorageTreeStructure(fixture.DatabaseName, "Docs", null, timeout.Token);
-        Assert.Equal("Docs", tree.TreeName);
-        Assert.NotEmpty(tree.Structure);
-
         Assert.Equal(JsonValueKind.Object, (await client.GetStorageCompressionDictionaries(fixture.DatabaseName, timeout.Token)).Dictionaries.ValueKind);
     }
 

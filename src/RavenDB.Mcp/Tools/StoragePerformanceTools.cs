@@ -18,48 +18,27 @@ public static class StoragePerformanceTools
         return client.GetStorageOverview(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_storage_trees", ReadOnly = true)]
-    [Description("Low-level storage tree listing for a database's Voron environment: tree names, types, and page/size details.")]
-    public static Task<GetStorageTreesResult> GetStorageTrees(
+    [McpServerTool(Name = "inspect_storage", ReadOnly = true)]
+    [Description("Storage internals deep-dive for a database. Sections: Trees (Voron tree listing), Environment (one environment's report + scratch buffers + free space; defaults to the Documents environment — set environmentName/environmentType for Index/Configuration/System), CompressionDictionaries. Choose with include; default is Trees + Environment. For high-level sizes use get_database_stats with the storage section.")]
+    public static async Task<Dictionary<string, object?>> InspectStorage(
         RavenDbAdminClient client,
-        string databaseName,
+        [Description("Database to inspect.")] string databaseName,
+        [Description("Sections to return; omit for Trees + Environment.")] StorageFacet[]? include,
+        [Description("Environment name for the Environment section (defaults to the database's Documents environment).")] string? environmentName,
+        [Description("Environment type for Environment: Documents (default), Index, Configuration, or System.")] string? environmentType,
         CancellationToken cancellationToken)
     {
-        return client.GetStorageTrees(databaseName, cancellationToken);
-    }
+        var sections = Facet.Resolve(include, StorageFacet.Trees, StorageFacet.Environment);
+        var result = new Dictionary<string, object?>();
 
-    [McpServerTool(Name = "get_storage_environment_details", ReadOnly = true)]
-    [Description("Deep storage detail for one environment (Documents/Index/Configuration/System): report, scratch-buffer info, and free-space snapshot. Defaults to the Documents environment of the database.")]
-    public static Task<GetStorageEnvironmentDetailsResult> GetStorageEnvironmentDetails(
-        RavenDbAdminClient client,
-        string databaseName,
-        string? environmentName,
-        string? environmentType,
-        CancellationToken cancellationToken)
-    {
-        return client.GetStorageEnvironmentDetails(databaseName, environmentName, environmentType, cancellationToken);
-    }
+        if (sections.Contains(StorageFacet.Trees))
+            result["trees"] = await client.GetStorageTrees(databaseName, cancellationToken);
+        if (sections.Contains(StorageFacet.Environment))
+            result["environment"] = await client.GetStorageEnvironmentDetails(databaseName, environmentName, environmentType, cancellationToken);
+        if (sections.Contains(StorageFacet.CompressionDictionaries))
+            result["compressionDictionaries"] = await client.GetStorageCompressionDictionaries(databaseName, cancellationToken);
 
-    [McpServerTool(Name = "get_storage_tree_structure", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Dump the internal structure of one storage tree. Use a treeName from get_storage_trees (e.g. 'Docs', 'Etags'). treeKind selects btree (default) or fixed_size/fst. Returns RavenDB's raw structure (HTML) text.")]
-    public static Task<GetStorageTreeStructureResult> GetStorageTreeStructure(
-        RavenDbAdminClient client,
-        string databaseName,
-        string treeName,
-        string? treeKind,
-        CancellationToken cancellationToken)
-    {
-        return client.GetStorageTreeStructure(databaseName, treeName, treeKind, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_storage_compression_dictionaries", ReadOnly = true)]
-    [Description("Document-compression dictionaries for a database: dictionary ids and sizes used by RavenDB's storage compression.")]
-    public static Task<GetStorageCompressionDictionariesResult> GetStorageCompressionDictionaries(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetStorageCompressionDictionaries(databaseName, cancellationToken);
+        return result;
     }
 
     [McpServerTool(Name = "get_server_resources", ReadOnly = true)]
@@ -155,12 +134,6 @@ public sealed record GetStorageEnvironmentDetailsResult(
     JsonElement Report,
     JsonElement ScratchBuffers,
     JsonElement FreeSpace);
-
-public sealed record GetStorageTreeStructureResult(
-    string DatabaseName,
-    string TreeName,
-    string TreeKind,
-    string Structure);
 
 public sealed record GetStorageCompressionDictionariesResult(string DatabaseName, JsonElement Dictionaries);
 
