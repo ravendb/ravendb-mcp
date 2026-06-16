@@ -67,36 +67,6 @@ public static class DiagnosticsExpansionTools
         return client.GetIndexDebugDetails(databaseName, indexName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_query_diagnostics", ReadOnly = true)]
-    [Description("Query diagnostics for a database: currently running queries and the query-cache contents. Each section is availability-wrapped.")]
-    public static Task<GetQueryDiagnosticsResult> GetQueryDiagnostics(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetQueryDiagnostics(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_operations_overview", ReadOnly = true)]
-    [Description("Running operations overview: per-database running operations (when databaseName is given) plus server-wide longest-running operations.")]
-    public static Task<GetOperationsOverviewResult> GetOperationsOverview(
-        RavenDbAdminClient client,
-        string? databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetOperationsOverview(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_transaction_diagnostics", ReadOnly = true)]
-    [Description("Transaction diagnostics: server-wide tx info plus (when databaseName is given) the database's tx info and cluster-transaction info. Sections are availability-wrapped.")]
-    public static Task<GetTransactionDiagnosticsResult> GetTransactionDiagnostics(
-        RavenDbAdminClient client,
-        string? databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetTransactionDiagnostics(databaseName, cancellationToken);
-    }
-
     [McpServerTool(Name = "wait_for_completion", ReadOnly = true)]
     [Description("Block until a condition is met or the timeout elapses. condition=Operation polls a server operation (by operationId) until a terminal state (Completed/Faulted/Canceled); condition=Indexing waits until the database has no stale indexes. Returns completion flag, poll count, and last state.")]
     public static Task<WaitForConditionResult> WaitForCompletion(
