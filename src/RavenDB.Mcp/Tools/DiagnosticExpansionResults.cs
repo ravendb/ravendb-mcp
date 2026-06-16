@@ -23,13 +23,6 @@ public sealed record GetClusterDiagnosticsOverviewResult(
     JsonElement EngineLogs,
     JsonElement StateChanges);
 
-public sealed record PingClusterNodeResult(
-    string Url,
-    int? StatusCode,
-    bool Success,
-    long ElapsedMilliseconds,
-    string? Error);
-
 public sealed record GetIndexStalenessResult(string DatabaseName, string IndexName, JsonElement Staleness);
 
 public sealed record GetIndexDebugDetailsResult(

@@ -55,6 +55,25 @@ public enum ResourceInclude
     ScriptRunners
 }
 
+/// <summary>Sections returned by <c>get_cluster_overview</c>.</summary>
+public enum ClusterInclude
+{
+    /// <summary>Topology, leader, and per-node tag/type/url/health.</summary>
+    Nodes,
+
+    /// <summary>Build/version and the contacted node's info.</summary>
+    ServerInfo,
+
+    /// <summary>Server-level diagnostics (routes, settings, metrics, license, idle DBs, ...).</summary>
+    ServerDiagnostics,
+
+    /// <summary>Cluster-level diagnostics (observer decisions, cluster log, engine logs, ...).</summary>
+    ClusterDiagnostics,
+
+    /// <summary>Server-wide notifications (alerts, performance hints, errors).</summary>
+    Notifications
+}
+
 /// <summary>Which debug package <c>collect_debug_package</c> downloads.</summary>
 public enum PackageScope
 {

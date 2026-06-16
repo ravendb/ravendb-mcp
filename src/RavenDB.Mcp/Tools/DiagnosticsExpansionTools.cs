@@ -7,34 +7,6 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DiagnosticsExpansionTools
 {
-    [McpServerTool(Name = "get_server_diagnostics_overview", ReadOnly = true)]
-    [Description("Server-level diagnostics in one call: routes, configuration settings, metrics, CPU credits, idle databases, license connectivity, and cluster maintenance stats. Each section is availability-wrapped.")]
-    public static Task<GetServerDiagnosticsOverviewResult> GetServerDiagnosticsOverview(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetServerDiagnosticsOverview(cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_cluster_diagnostics_overview", ReadOnly = true)]
-    [Description("Cluster-level diagnostics in one call: observer decisions, cluster log, history logs, remote connections, engine logs, and state-change history. Each section is availability-wrapped.")]
-    public static Task<GetClusterDiagnosticsOverviewResult> GetClusterDiagnosticsOverview(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetClusterDiagnosticsOverview(cancellationToken);
-    }
-
-    [McpServerTool(Name = "ping_cluster_node", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Ping a node URL's debug endpoint and measure latency. Returns status code, success, elapsed ms, and any error. Use to check a specific node's reachability.")]
-    public static Task<PingClusterNodeResult> PingClusterNode(
-        RavenDbAdminClient client,
-        string url,
-        CancellationToken cancellationToken)
-    {
-        return client.PingClusterNode(url, cancellationToken);
-    }
-
     [McpServerTool(Name = "sample_cluster_dashboard", ReadOnly = true, UseStructuredContent = true)]
     [Description("Stream a few seconds (1-30) of the live cluster dashboard feed (throughput, requests, indexing, storage). Returns raw text with Truncated/Limit flags when capped.")]
     public static Task<DiagnosticTextSampleResult> SampleClusterDashboard(
@@ -157,16 +129,6 @@ public static class DiagnosticsExpansionTools
         CancellationToken cancellationToken)
     {
         return client.SampleTrafficWatch(seconds, databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_notifications", ReadOnly = true)]
-    [Description("Active notifications/alerts. Omit databaseName for server-wide notifications; pass it for that database's notifications (alerts, performance hints, errors).")]
-    public static Task<GetNotificationsResult> GetNotifications(
-        RavenDbAdminClient client,
-        string? databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetNotifications(databaseName, cancellationToken);
     }
 
     [McpServerTool(Name = "sample_admin_logs", ReadOnly = true, UseStructuredContent = true)]

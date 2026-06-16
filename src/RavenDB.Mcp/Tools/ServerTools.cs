@@ -8,22 +8,23 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class ServerTools
 {
-    [McpServerTool(Name = "get_server_info", ReadOnly = true)]
-    [Description("Build/version and contacted-node info. Cheap first call. Returns product/build/commit/full version and the node's NodeInfo (server id, state, role, cores, memory, OS).")]
-    public static Task<GetServerInfoResult> GetServerInfo(
+    [McpServerTool(Name = "get_cluster_overview", ReadOnly = true)]
+    [Description("Cluster and server overview. Sections: Nodes (topology, leader, per-node tag/type/url/health), ServerInfo (build/version + contacted node), ServerDiagnostics (routes/settings/metrics/license/idle DBs), ClusterDiagnostics (observer decisions, cluster log, engine logs), Notifications (server-wide alerts). Choose with include; default is Nodes + ServerInfo.")]
+    public static async Task<Dictionary<string, object?>> GetClusterOverview(
         RavenDbAdminClient client,
+        [Description("Sections to return; omit for Nodes + ServerInfo.")] ClusterInclude[]? include,
         CancellationToken cancellationToken)
     {
-        return client.GetServerInfo(cancellationToken);
-    }
+        var sections = Facet.Resolve(include, ClusterInclude.Nodes, ClusterInclude.ServerInfo);
+        var result = new Dictionary<string, object?>();
 
-    [McpServerTool(Name = "get_cluster_nodes", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Cluster topology with per-node tag/type/url/status. Build and self info are populated for the contacted node only. Use to see cluster membership, leader, and node reachability.")]
-    public static Task<GetClusterNodesResult> GetClusterNodes(
-        RavenDbAdminClient client,
-        CancellationToken cancellationToken)
-    {
-        return client.GetClusterNodes(cancellationToken);
+        if (sections.Contains(ClusterInclude.Nodes)) result["nodes"] = await client.GetClusterNodes(cancellationToken);
+        if (sections.Contains(ClusterInclude.ServerInfo)) result["serverInfo"] = await client.GetServerInfo(cancellationToken);
+        if (sections.Contains(ClusterInclude.ServerDiagnostics)) result["serverDiagnostics"] = await client.GetServerDiagnosticsOverview(cancellationToken);
+        if (sections.Contains(ClusterInclude.ClusterDiagnostics)) result["clusterDiagnostics"] = await client.GetClusterDiagnosticsOverview(cancellationToken);
+        if (sections.Contains(ClusterInclude.Notifications)) result["notifications"] = await client.GetNotifications(null, cancellationToken);
+
+        return result;
     }
 
     [McpServerTool(Name = "get_logs_configuration", ReadOnly = true)]
