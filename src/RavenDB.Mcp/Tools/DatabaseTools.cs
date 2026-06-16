@@ -47,26 +47,50 @@ public static class DatabaseTools
         return client.GetDatabaseOverview(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_database_configuration", ReadOnly = true)]
-    [Description("Effective database settings (the configuration keys/values RavenDB applies to this database).")]
-    public static Task<GetDatabaseConfigurationResult> GetDatabaseConfiguration(
+    // Feature toggles/policies live in the database record; one fetch covers all of them.
+    private static readonly (DatabaseConfigSection Section, string RecordKey, string Label)[] FeatureSections =
+    [
+        (DatabaseConfigSection.Expiration, "Expiration", "expiration"),
+        (DatabaseConfigSection.Refresh, "Refresh", "refresh"),
+        (DatabaseConfigSection.DataArchival, "DataArchival", "dataArchival"),
+        (DatabaseConfigSection.Revisions, "Revisions", "revisions"),
+        (DatabaseConfigSection.DocumentsCompression, "DocumentsCompression", "documentsCompression"),
+        (DatabaseConfigSection.TimeSeries, "TimeSeries", "timeSeries"),
+        (DatabaseConfigSection.SchemaValidation, "SchemaValidation", "schemaValidation")
+    ];
+
+    [McpServerTool(Name = "get_database_config", ReadOnly = true)]
+    [Description("Configuration of one database. Sections: Settings (effective config keys), ClientConfig (client config pushed to clients), Studio, and feature toggles/policies Expiration, Refresh, DataArchival, Revisions, DocumentsCompression, TimeSeries, SchemaValidation. Choose with include; default is all. Feature sections are projected from the database record; null means not configured.")]
+    public static async Task<Dictionary<string, object?>> GetDatabaseConfig(
         RavenDbAdminClient client,
-        string databaseName,
+        [Description("Database to read configuration for.")] string databaseName,
+        [Description("Sections to return; omit for all.")] DatabaseConfigSection[]? include,
         CancellationToken cancellationToken)
     {
-        return client.GetDatabaseConfiguration(databaseName, cancellationToken);
-    }
+        var sections = Facet.Resolve(include,
+            DatabaseConfigSection.Settings, DatabaseConfigSection.ClientConfig, DatabaseConfigSection.Studio,
+            DatabaseConfigSection.Expiration, DatabaseConfigSection.Refresh, DatabaseConfigSection.DataArchival,
+            DatabaseConfigSection.Revisions, DatabaseConfigSection.DocumentsCompression,
+            DatabaseConfigSection.TimeSeries, DatabaseConfigSection.SchemaValidation);
+        var result = new Dictionary<string, object?>();
 
-    [McpServerTool(Name = "get_client_configuration", ReadOnly = true)]
-    [Description("Per-database client configuration RavenDB pushes to clients: read balance, load-balancing behavior, max requests per session.")]
-    public static Task<GetClientConfigurationResult> GetClientConfiguration(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetClientConfiguration(databaseName, cancellationToken);
-    }
+        if (sections.Contains(DatabaseConfigSection.Settings))
+            result["settings"] = await client.GetDatabaseConfiguration(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseConfigSection.ClientConfig))
+            result["clientConfig"] = await client.GetClientConfiguration(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseConfigSection.Studio))
+            result["studio"] = await client.GetDatabaseStudioConfiguration(databaseName, cancellationToken);
 
+        var requestedFeatures = FeatureSections.Where(feature => sections.Contains(feature.Section)).ToArray();
+        if (requestedFeatures.Length > 0)
+        {
+            var record = (await client.GetDatabaseRecord(databaseName, cancellationToken)).Record;
+            foreach (var (_, recordKey, label) in requestedFeatures)
+                result[label] = record.TryGetProperty(recordKey, out var value) ? (object?)value : null;
+        }
+
+        return result;
+    }
 }
 
 public sealed record ListDatabasesResult(string[] Databases);

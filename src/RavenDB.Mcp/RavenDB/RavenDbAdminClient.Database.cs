@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Raven.Client.Documents.Operations;
 using Raven.Client.Documents.Operations.Configuration;
 using Raven.Client.ServerWide.Operations;
@@ -114,5 +115,11 @@ public sealed partial class RavenDbAdminClient
             token: cancellationToken);
 
         return new GetClientConfigurationResult(databaseName, ToJson(configuration));
+    }
+
+    public Task<JsonElement> GetDatabaseStudioConfiguration(string databaseName, CancellationToken cancellationToken)
+    {
+        ValidateDatabaseName(databaseName);
+        return GetDatabaseJson(databaseName, "/configuration/studio", cancellationToken);
     }
 }

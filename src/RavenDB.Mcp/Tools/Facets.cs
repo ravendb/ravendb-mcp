@@ -55,6 +55,40 @@ public enum ResourceInclude
     ScriptRunners
 }
 
+/// <summary>Database-scoped configuration sections returned by <c>get_database_config</c>.</summary>
+public enum DatabaseConfigSection
+{
+    /// <summary>Effective database configuration keys/values.</summary>
+    Settings,
+
+    /// <summary>Per-database client configuration pushed to clients.</summary>
+    ClientConfig,
+
+    /// <summary>Studio configuration (environment banner, disabled UI features).</summary>
+    Studio,
+
+    /// <summary>Document-expiration policy (from the database record).</summary>
+    Expiration,
+
+    /// <summary>Document-refresh policy (from the database record).</summary>
+    Refresh,
+
+    /// <summary>Data-archival policy (from the database record).</summary>
+    DataArchival,
+
+    /// <summary>Revisions configuration (from the database record).</summary>
+    Revisions,
+
+    /// <summary>Documents-compression configuration (from the database record).</summary>
+    DocumentsCompression,
+
+    /// <summary>Time-series configuration (from the database record).</summary>
+    TimeSeries,
+
+    /// <summary>Schema-validation configuration (from the database record).</summary>
+    SchemaValidation
+}
+
 /// <summary>Per-index views returned by <c>get_index</c>.</summary>
 public enum IndexInclude
 {
