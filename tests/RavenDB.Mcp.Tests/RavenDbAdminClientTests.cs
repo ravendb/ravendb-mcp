@@ -39,11 +39,6 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
 
         Assert.Equal(JsonValueKind.Object, (await client.GetLogsConfiguration(timeout.Token)).Configuration.ValueKind);
 
-        var overview = await client.GetDatabaseOverview(fixture.DatabaseName, timeout.Token);
-        Assert.Equal(fixture.DatabaseName, overview.DatabaseName);
-        Assert.Equal(JsonValueKind.Object, overview.Stats.ValueKind);
-        Assert.Equal(JsonValueKind.Object, overview.DetailedStats.ValueKind);
-
         var collections = await client.GetCollectionOverview(fixture.DatabaseName, timeout.Token);
         Assert.Equal(JsonValueKind.Object, collections.Stats.ValueKind);
         Assert.Equal(JsonValueKind.Object, collections.DetailedStats.ValueKind);

@@ -76,14 +76,4 @@ public static class DiagnosticsExpansionTools
             _ => throw new ArgumentOutOfRangeException(nameof(scope))
         };
     }
-
-    [McpServerTool(Name = "collect_diagnostic_snapshot", ReadOnly = true)]
-    [Description("One-call broad snapshot for a database: cluster nodes, database overview, indexing overview, ongoing tasks, notifications, and a database info-package artifact. Good starting point for triage.")]
-    public static Task<CollectDiagnosticSnapshotResult> CollectDiagnosticSnapshot(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.CollectDiagnosticSnapshot(databaseName, cancellationToken);
-    }
 }

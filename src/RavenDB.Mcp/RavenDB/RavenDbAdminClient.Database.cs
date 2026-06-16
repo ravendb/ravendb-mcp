@@ -77,28 +77,6 @@ public sealed partial class RavenDbAdminClient
             (await detailedStatsTask).Stats);
     }
 
-    public async Task<GetDatabaseOverviewResult> GetDatabaseOverview(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        var statsTask = GetDatabaseStats(databaseName, cancellationToken);
-        var detailedStatsTask = GetDetailedDatabaseStats(databaseName, cancellationToken);
-        var indexingStatusTask = GetIndexingStatus(databaseName, cancellationToken);
-        var indexStatsTask = GetIndexStats(databaseName, cancellationToken);
-        var indexErrorsTask = GetIndexErrors(databaseName, cancellationToken);
-        var tasksTask = GetDatabaseTasks(databaseName, cancellationToken);
-        await Task.WhenAll(statsTask, detailedStatsTask, indexingStatusTask, indexStatsTask, indexErrorsTask, tasksTask);
-
-        return new GetDatabaseOverviewResult(
-            databaseName,
-            (await statsTask).Stats,
-            (await detailedStatsTask).Stats,
-            (await indexingStatusTask).Status,
-            (await indexStatsTask).Stats,
-            (await indexErrorsTask).Errors,
-            (await tasksTask).Tasks);
-    }
-
     public async Task<GetDatabaseConfigurationResult> GetDatabaseConfiguration(string databaseName, CancellationToken cancellationToken)
     {
         var configuration = await ForDatabase(databaseName).SendAsync(

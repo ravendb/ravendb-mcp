@@ -61,26 +61,4 @@ public sealed partial class RavenDbAdminClient
         return SaveDatabaseArtifact(databaseName, "database-info-package", "/debug/info-package", cancellationToken);
     }
 
-    public async Task<CollectDiagnosticSnapshotResult> CollectDiagnosticSnapshot(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        var clusterTask = GetClusterNodes(cancellationToken);
-        var databaseTask = GetDatabaseOverview(databaseName, cancellationToken);
-        var indexesTask = GetIndexingOverview(databaseName, cancellationToken);
-        var tasksTask = GetDatabaseTasks(databaseName, cancellationToken);
-        var notificationsTask = TryGetDatabaseJson(databaseName, "/notifications", cancellationToken);
-        var packageTask = CollectDatabaseInfoPackage(databaseName, cancellationToken);
-        await Task.WhenAll(clusterTask, databaseTask, indexesTask, tasksTask, notificationsTask, packageTask);
-
-        return new CollectDiagnosticSnapshotResult(
-            databaseName,
-            ToJson(await clusterTask),
-            ToJson(await databaseTask),
-            ToJson(await indexesTask),
-            (await tasksTask).Tasks,
-            await notificationsTask,
-            await packageTask);
-    }
-
 }

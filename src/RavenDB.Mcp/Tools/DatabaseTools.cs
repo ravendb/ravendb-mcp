@@ -120,15 +120,6 @@ public sealed record GetCollectionOverviewResult(
     JsonElement Stats,
     JsonElement DetailedStats);
 
-public sealed record GetDatabaseOverviewResult(
-    string DatabaseName,
-    JsonElement Stats,
-    JsonElement DetailedStats,
-    JsonElement IndexingStatus,
-    JsonElement IndexStats,
-    JsonElement IndexErrors,
-    JsonElement Tasks);
-
 public sealed record GetDatabaseConfigurationResult(string DatabaseName, JsonElement Configuration);
 
 public sealed record GetClientConfigurationResult(string DatabaseName, JsonElement Configuration);

@@ -88,12 +88,3 @@ public sealed record GetHugeDocumentsReportResult(string DatabaseName, JsonEleme
 public sealed record GetDocumentRevisionsResult(string DatabaseName, string DocumentId, JsonElement Revisions);
 
 public sealed record GetRevisionsCollectionStatsResult(string DatabaseName, JsonElement Stats);
-
-public sealed record CollectDiagnosticSnapshotResult(
-    string DatabaseName,
-    JsonElement Cluster,
-    JsonElement Database,
-    JsonElement Indexes,
-    JsonElement Tasks,
-    JsonElement Notifications,
-    DiagnosticArtifactResult DatabaseInfoPackage);

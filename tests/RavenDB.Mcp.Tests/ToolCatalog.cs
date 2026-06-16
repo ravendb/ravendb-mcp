@@ -5,7 +5,6 @@ internal static class ToolCatalog
     public static readonly string[] ExpectedToolNames =
     [
         "collect_debug_package",
-        "collect_diagnostic_snapshot",
         "export_server_logs",
         "get_ai_agents",
         "get_cluster_overview",
