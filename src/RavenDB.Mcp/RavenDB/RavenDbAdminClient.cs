@@ -23,8 +23,8 @@ public sealed partial class RavenDbAdminClient(
         IncludeFields = true
     };
 
-    private readonly X509Certificate2? clientCertificate = LoadClientCertificate(options?.Value);
-    private readonly HttpClient http = CreateHttpClient(options?.Value);
+    private readonly X509Certificate2? clientCertificate = ResolveClientCertificate(store, options?.Value);
+    private readonly HttpClient http = CreateHttpClient(ResolveClientCertificate(store, options?.Value));
 
     // Raw HTTP diagnostic routes target the configured primary node by design for v1.
     // Typed Client-API calls still fail over across the cluster; raw debug/admin routes do not.
@@ -210,13 +210,22 @@ public sealed partial class RavenDbAdminClient(
             : DocumentStoreFactory.LoadCertificate(options);
     }
 
-    private static HttpClient CreateHttpClient(RavenDbOptions? options)
+    // The raw HTTP/WebSocket stack must authenticate with the SAME client certificate as the typed
+    // store, or every raw route 403s against a secured server. Prefer an explicitly-configured
+    // certificate, but fall back to the one the store already uses — most call sites construct this
+    // client from just a store (the store carries the effective certificate).
+    private static X509Certificate2? ResolveClientCertificate(IDocumentStore store, RavenDbOptions? options)
     {
-        var certificate = LoadClientCertificate(options);
+        return LoadClientCertificate(options) ?? store.Certificate;
+    }
+
+    private static HttpClient CreateHttpClient(X509Certificate2? certificate)
+    {
         if (certificate is null)
             return new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
 
-        var handler = new HttpClientHandler();
+        // Manual: present exactly this certificate, rather than searching the user's store.
+        var handler = new HttpClientHandler { ClientCertificateOptions = ClientCertificateOption.Manual };
         handler.ClientCertificates.Add(certificate);
         return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60) };
     }
