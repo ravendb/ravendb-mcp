@@ -13,10 +13,10 @@ public static class StoragePerformanceTools
     public static async Task<Dictionary<string, object?>> InspectStorage(
         RavenDbAdminClient client,
         [Description("Database to inspect.")] string databaseName,
-        [Description("Sections to return; omit for Trees + Environment.")] StorageFacet[]? include,
-        [Description("Environment name for the Environment section (defaults to the database's Documents environment).")] string? environmentName,
-        [Description("Environment type for Environment: Documents (default), Index, Configuration, or System.")] string? environmentType,
-        CancellationToken cancellationToken)
+        [Description("Sections to return; omit for Trees + Environment.")] StorageFacet[]? include = null,
+        [Description("Environment name for the Environment section (defaults to the database's Documents environment).")] string? environmentName = null,
+        [Description("Environment type for Environment: Documents (default), Index, Configuration, or System.")] string? environmentType = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include, StorageFacet.Trees, StorageFacet.Environment);
         var result = new Dictionary<string, object?>();
@@ -35,8 +35,8 @@ public static class StoragePerformanceTools
     [Description("Host/runtime resource snapshot. Sections: Metrics, Cpu, Io, Gc, Memory (includes threads), Process, LowMemoryLog, EncryptionBufferPool, StackTraces, ScriptRunners. Choose with include; default is the core set (Metrics, Cpu, Io, Gc, Memory, Process). Use for host-health and runtime investigation.")]
     public static async Task<Dictionary<string, object?>> GetServerResources(
         RavenDbAdminClient client,
-        [Description("Sections to return; omit for the core set (metrics, cpu, io, gc, memory, process).")] ResourceInclude[]? include,
-        CancellationToken cancellationToken)
+        [Description("Sections to return; omit for the core set (metrics, cpu, io, gc, memory, process).")] ResourceInclude[]? include = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include,
             ResourceInclude.Metrics, ResourceInclude.Cpu, ResourceInclude.Io,
@@ -61,10 +61,10 @@ public static class StoragePerformanceTools
     [Description("TCP/network details: Stats (server connection counts + bytes), Connections (active TCP connections — server-wide, or per database when databaseName is given), DatabaseInfo (endpoint a client/node uses to reach a database on a node — needs databaseName + nodeTag). Choose sections with include; default is Stats + Connections.")]
     public static async Task<Dictionary<string, object?>> GetNetworkDetails(
         RavenDbAdminClient client,
-        [Description("Sections to return; omit for Stats + Connections.")] NetworkFacet[]? include,
-        [Description("Database to scope Connections to, or required for DatabaseInfo. Omit for server-wide.")] string? databaseName,
-        [Description("Node tag — required for DatabaseInfo (e.g. 'A').")] string? nodeTag,
-        CancellationToken cancellationToken)
+        [Description("Sections to return; omit for Stats + Connections.")] NetworkFacet[]? include = null,
+        [Description("Database to scope Connections to, or required for DatabaseInfo. Omit for server-wide.")] string? databaseName = null,
+        [Description("Node tag — required for DatabaseInfo (e.g. 'A').")] string? nodeTag = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include, NetworkFacet.Stats, NetworkFacet.Connections);
         var result = new Dictionary<string, object?>();

@@ -12,10 +12,10 @@ public static class OperationsTools
     [Description("Live runtime activity: running (and longest-running) operations, currently running queries plus the query cache, and transaction info. Choose sections with include (default: all). Pass operationId to fetch one operation's state instead of the overview. databaseName is required for Queries and (with operationId) Operations; for Operations/Transactions without it, results are server-wide.")]
     public static async Task<Dictionary<string, object?>> GetLiveWorkload(
         RavenDbAdminClient client,
-        [Description("Database to scope to. Required for Queries and for an operationId lookup; omit for server-wide Operations/Transactions.")] string? databaseName,
-        [Description("Sections to return; omit for all.")] WorkloadInclude[]? include,
-        [Description("Fetch this operation's state instead of the running-operations overview (needs databaseName).")] long? operationId,
-        CancellationToken cancellationToken)
+        [Description("Database to scope to. Required for Queries and for an operationId lookup; omit for server-wide Operations/Transactions.")] string? databaseName = null,
+        [Description("Sections to return; omit for all.")] WorkloadInclude[]? include = null,
+        [Description("Fetch this operation's state instead of the running-operations overview (needs databaseName).")] long? operationId = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include, WorkloadInclude.Operations, WorkloadInclude.Queries, WorkloadInclude.Transactions);
         var result = new Dictionary<string, object?>();

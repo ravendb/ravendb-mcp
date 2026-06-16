@@ -32,8 +32,8 @@ public static class DatabaseTools
     public static async Task<Dictionary<string, object?>> GetDatabaseStats(
         RavenDbAdminClient client,
         [Description("Database to read.")] string databaseName,
-        [Description("Sections to return; omit for Summary + Collections + Indexing.")] DatabaseStatsInclude[]? include,
-        CancellationToken cancellationToken)
+        [Description("Sections to return; omit for Summary + Collections + Indexing.")] DatabaseStatsInclude[]? include = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include,
             DatabaseStatsInclude.Summary, DatabaseStatsInclude.Collections, DatabaseStatsInclude.Indexing);
@@ -74,8 +74,8 @@ public static class DatabaseTools
     public static async Task<Dictionary<string, object?>> GetDatabaseConfig(
         RavenDbAdminClient client,
         [Description("Database to read configuration for.")] string databaseName,
-        [Description("Sections to return; omit for all.")] DatabaseConfigSection[]? include,
-        CancellationToken cancellationToken)
+        [Description("Sections to return; omit for all.")] DatabaseConfigSection[]? include = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include,
             DatabaseConfigSection.Settings, DatabaseConfigSection.ClientConfig, DatabaseConfigSection.Studio,

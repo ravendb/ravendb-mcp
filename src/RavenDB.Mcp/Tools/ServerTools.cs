@@ -12,8 +12,8 @@ public static class ServerTools
     [Description("Cluster and server overview. Sections: Nodes (topology, leader, per-node tag/type/url/health), ServerInfo (build/version + contacted node), ServerDiagnostics (routes/settings/metrics/license/idle DBs), ClusterDiagnostics (observer decisions, cluster log, engine logs). Choose with include; default is Nodes + ServerInfo. For alerts/hints use get_notifications.")]
     public static async Task<Dictionary<string, object?>> GetClusterOverview(
         RavenDbAdminClient client,
-        [Description("Sections to return; omit for Nodes + ServerInfo.")] ClusterInclude[]? include,
-        CancellationToken cancellationToken)
+        [Description("Sections to return; omit for Nodes + ServerInfo.")] ClusterInclude[]? include = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include, ClusterInclude.Nodes, ClusterInclude.ServerInfo);
         var result = new Dictionary<string, object?>();
@@ -30,8 +30,8 @@ public static class ServerTools
     [Description("Active RavenDB notifications — alerts, performance hints, and operation/error notices. Omit databaseName for server-wide notifications; pass it to scope to one database. Returns the raw notification list (group/categorize client-side as needed).")]
     public static Task<GetNotificationsResult> GetNotifications(
         RavenDbAdminClient client,
-        [Description("Database to scope to; omit for server-wide notifications.")] string? databaseName,
-        CancellationToken cancellationToken)
+        [Description("Database to scope to; omit for server-wide notifications.")] string? databaseName = null,
+        CancellationToken cancellationToken = default)
     {
         return client.GetNotifications(databaseName, cancellationToken);
     }
@@ -40,8 +40,8 @@ public static class ServerTools
     [Description("Server-scoped configuration. Sections: Logs (mode/levels/paths/retention), ClientConfig (server-wide client config pushed to all clients), TrafficWatch (capture configuration), Studio (environment banner, disabled UI features). Choose with include; default is all. For per-database configuration use get_database_config.")]
     public static async Task<Dictionary<string, object?>> GetServerConfig(
         RavenDbAdminClient client,
-        [Description("Sections to return; omit for all.")] ServerConfigSection[]? include,
-        CancellationToken cancellationToken)
+        [Description("Sections to return; omit for all.")] ServerConfigSection[]? include = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include,
             ServerConfigSection.Logs, ServerConfigSection.ClientConfig,

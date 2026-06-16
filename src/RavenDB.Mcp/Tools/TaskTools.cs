@@ -14,11 +14,11 @@ public static class TaskTools
     public static async Task<Dictionary<string, object?>> GetTasks(
         RavenDbAdminClient client,
         [Description("Database to read tasks for.")] string databaseName,
-        [Description("Task type for info or diagnostics: Backup, RavenEtl, SqlEtl, OlapEtl, ElasticSearchEtl, QueueEtl, QueueSink, Replication, Subscription, PullReplicationAsHub, PullReplicationAsSink.")] OngoingTaskType? taskType,
-        [Description("Task id — returns this task's runtime info (requires taskType).")] long? taskId,
-        [Description("Subscription name — returns this subscription's processing state.")] string? subscriptionName,
-        [Description("Add deep diagnostics for the taskType family (requires taskType).")] bool includeDiagnostics,
-        CancellationToken cancellationToken)
+        [Description("Task type for info or diagnostics: Backup, RavenEtl, SqlEtl, OlapEtl, ElasticSearchEtl, QueueEtl, QueueSink, Replication, Subscription, PullReplicationAsHub, PullReplicationAsSink.")] OngoingTaskType? taskType = null,
+        [Description("Task id — returns this task's runtime info (requires taskType).")] long? taskId = null,
+        [Description("Subscription name — returns this subscription's processing state.")] string? subscriptionName = null,
+        [Description("Add deep diagnostics for the taskType family (requires taskType).")] bool includeDiagnostics = false,
+        CancellationToken cancellationToken = default)
     {
         var result = new Dictionary<string, object?>();
 

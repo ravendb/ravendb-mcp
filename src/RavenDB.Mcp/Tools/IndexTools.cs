@@ -14,11 +14,11 @@ public static class IndexTools
         RavenDbAdminClient client,
         [Description("Database the index belongs to.")] string databaseName,
         [Description("Index name.")] string indexName,
-        [Description("Sections to return; omit for Definition + Staleness.")] IndexInclude[]? include,
-        [Description("Field name — required for the Terms section.")] string? fieldName,
-        [Description("Terms paging: return terms after this value.")] string? fromValue,
-        [Description("Terms paging: max terms to return.")] int? pageSize,
-        CancellationToken cancellationToken)
+        [Description("Sections to return; omit for Definition + Staleness.")] IndexInclude[]? include = null,
+        [Description("Field name — required for the Terms section.")] string? fieldName = null,
+        [Description("Terms paging: return terms after this value.")] string? fromValue = null,
+        [Description("Terms paging: max terms to return.")] int? pageSize = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include, IndexInclude.Definition, IndexInclude.Staleness);
         var result = new Dictionary<string, object?>();

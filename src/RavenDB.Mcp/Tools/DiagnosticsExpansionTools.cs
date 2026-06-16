@@ -13,8 +13,8 @@ public static class DiagnosticsExpansionTools
         RavenDbAdminClient client,
         [Description("Which live feed to pull.")] FeedKind feed,
         [Description("Capture window in seconds, 1-30 (ignored for ThreadRunaway).")] int seconds,
-        [Description("For TrafficWatch: optionally scope the capture to one database.")] string? databaseName,
-        CancellationToken cancellationToken)
+        [Description("For TrafficWatch: optionally scope the capture to one database.")] string? databaseName = null,
+        CancellationToken cancellationToken = default)
     {
         return feed switch
         {
@@ -36,8 +36,8 @@ public static class DiagnosticsExpansionTools
         [Description("Database to target.")] string databaseName,
         [Description("What to wait for: Operation or Indexing.")] WaitCondition condition,
         [Description("Max seconds to wait, 1-300.")] int timeoutSeconds,
-        [Description("Server operation id — required when condition is Operation.")] long? operationId,
-        CancellationToken cancellationToken)
+        [Description("Server operation id — required when condition is Operation.")] long? operationId = null,
+        CancellationToken cancellationToken = default)
     {
         return condition switch
         {
@@ -53,9 +53,9 @@ public static class DiagnosticsExpansionTools
     [Description("Download the operational server logs (the regular runtime log stream, not the audit log) for an optional time range to a local artifact file. Returns the artifact path, content type, and byte size — not the log contents inline.")]
     public static Task<DiagnosticArtifactResult> ExportServerLogs(
         RavenDbAdminClient client,
-        DateTime? from,
-        DateTime? to,
-        CancellationToken cancellationToken)
+        [Description("Start of the time range (ISO-8601); omit for no lower bound.")] DateTime? from = null,
+        [Description("End of the time range (ISO-8601); omit for no upper bound.")] DateTime? to = null,
+        CancellationToken cancellationToken = default)
     {
         return client.ExportLogs(from, to, cancellationToken);
     }
@@ -65,8 +65,8 @@ public static class DiagnosticsExpansionTools
     public static Task<DiagnosticArtifactResult> CollectDebugPackage(
         RavenDbAdminClient client,
         [Description("Which package to collect: Server, Cluster, or Database.")] PackageScope scope,
-        [Description("Database to package — required when scope is Database.")] string? databaseName,
-        CancellationToken cancellationToken)
+        [Description("Database to package — required when scope is Database.")] string? databaseName = null,
+        CancellationToken cancellationToken = default)
     {
         return scope switch
         {

@@ -14,11 +14,11 @@ public static class DocumentDataTools
         RavenDbAdminClient client,
         [Description("Database the document is in.")] string databaseName,
         [Description("Exact document id, e.g. 'users/1-A'.")] string id,
-        [Description("Sections to return; omit for Document.")] DocumentInclude[]? include,
-        [Description("Time series name — required for the TimeSeries section.")] string? timeSeriesName,
-        [Description("TimeSeries range start (ISO-8601).")] DateTime? from,
-        [Description("TimeSeries range end (ISO-8601).")] DateTime? to,
-        CancellationToken cancellationToken)
+        [Description("Sections to return; omit for Document.")] DocumentInclude[]? include = null,
+        [Description("Time series name — required for the TimeSeries section.")] string? timeSeriesName = null,
+        [Description("TimeSeries range start (ISO-8601).")] DateTime? from = null,
+        [Description("TimeSeries range end (ISO-8601).")] DateTime? to = null,
+        CancellationToken cancellationToken = default)
     {
         var sections = Facet.Resolve(include, DocumentInclude.Document);
         var result = new Dictionary<string, object?>();
@@ -61,9 +61,9 @@ public static class DocumentDataTools
         RavenDbAdminClient client,
         string databaseName,
         [Description("RQL query, e.g. 'from Users where Age > 30'. Read-only; UPDATE/patch is rejected.")] string query,
-        [Description("Zero-based offset of the first row to return (default 0).")] int? start,
-        [Description("Max rows to return, 1-128 (default 25).")] int? pageSize,
-        CancellationToken cancellationToken)
+        [Description("Zero-based offset of the first row to return (default 0).")] int? start = null,
+        [Description("Max rows to return, 1-128 (default 25).")] int? pageSize = null,
+        CancellationToken cancellationToken = default)
     {
         return client.RunQuery(databaseName, query, start, pageSize, cancellationToken);
     }
@@ -73,9 +73,9 @@ public static class DocumentDataTools
     public static Task<JsonElement> ListCompareExchange(
         RavenDbAdminClient client,
         string databaseName,
-        [Description("Only return keys starting with this prefix.")] string? startsWith,
-        [Description("Max entries to return, 1-1024 (default 100).")] int? pageSize,
-        CancellationToken cancellationToken)
+        [Description("Only return keys starting with this prefix.")] string? startsWith = null,
+        [Description("Max entries to return, 1-1024 (default 100).")] int? pageSize = null,
+        CancellationToken cancellationToken = default)
     {
         return client.GetCompareExchange(databaseName, startsWith, pageSize, cancellationToken);
     }

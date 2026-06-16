@@ -13,8 +13,8 @@ public static class AiTools
     public static Task<JsonElement> GetAiAgents(
         RavenDbAdminClient client,
         string databaseName,
-        [Description("Agent name — omit to list all agents.")] string? name,
-        CancellationToken cancellationToken)
+        [Description("Agent name — omit to list all agents.")] string? name = null,
+        CancellationToken cancellationToken = default)
     {
         return client.GetAiAgents(databaseName, name, cancellationToken);
     }
