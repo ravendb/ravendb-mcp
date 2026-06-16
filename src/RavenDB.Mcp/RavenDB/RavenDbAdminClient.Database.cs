@@ -95,16 +95,14 @@ public sealed partial class RavenDbAdminClient
         return new GetClientConfigurationResult(databaseName, ToJson(configuration));
     }
 
-    // Studio configuration is optional; the route 404s until it's been set. Availability-wrapped
-    // so a database without studio config reports { available: false } instead of throwing.
+    // The studio-config route 404s until set; availability-wrapped.
     public Task<JsonElement> GetDatabaseStudioConfiguration(string databaseName, CancellationToken cancellationToken)
     {
         ValidateDatabaseName(databaseName);
         return TryGetDatabaseJson(databaseName, "/configuration/studio", cancellationToken);
     }
 
-    // No typed Client-API operation; availability-wrapped because these vary by version/topology
-    // (sharding only exists on sharded databases).
+    // No typed op; availability-wrapped (e.g. sharding state only exists on sharded databases).
     public Task<JsonElement> GetTombstonesState(string databaseName, CancellationToken cancellationToken)
     {
         ValidateDatabaseName(databaseName);

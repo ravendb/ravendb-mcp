@@ -161,8 +161,6 @@ public sealed partial class RavenDbAdminClient
         return new GetEncryptionBufferPoolStatsResult(await GetServerJson("/admin/debug/memory/encryption-buffer-pool", cancellationToken));
     }
 
-    // Streamed server text feeds. One named method per feed keeps the selection type-safe at the
-    // call site (the sample_live_feed tool dispatches its FeedKind enum here — no magic strings).
     private async Task<DiagnosticTextSampleResult> SampleServerTextFeed(
         string kind,
         string path,
@@ -187,7 +185,6 @@ public sealed partial class RavenDbAdminClient
     public Task<DiagnosticTextSampleResult> SampleThreadContention(int seconds, CancellationToken cancellationToken)
         => SampleServerTextFeed("thread_contention", "/admin/debug/threads/contention", seconds, cancellationToken);
 
-    // Runaway threads is a one-shot snapshot, not a streamed window — no sample window applies.
     public async Task<DiagnosticTextSampleResult> SampleThreadRunaway(CancellationToken cancellationToken)
         => new("thread_runaway", 0, await GetServerText("/admin/debug/threads/runaway", cancellationToken), false, 0);
 

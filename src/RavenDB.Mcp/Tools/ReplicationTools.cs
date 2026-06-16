@@ -2,9 +2,6 @@ using System.Text.Json;
 
 namespace RavenDB.Mcp.Tools;
 
-// Replication result records. The replication reads are surfaced through get_tasks
-// (taskType=Replication, includeDiagnostics) and the GetReplicationTasksDetails client method.
-
 public sealed record GetReplicationTasksResult(string DatabaseName, JsonElement Tasks);
 
 public sealed record GetReplicationPerformanceResult(string DatabaseName, JsonElement Performance);

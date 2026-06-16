@@ -46,8 +46,6 @@ public static class DatabaseTools
         return result;
     }
 
-    // Each stats section maps to a result key and the client read that produces it. Declared once
-    // and run in order for the selected sections — keeps the tool a thin, data-driven dispatcher.
     private static readonly (DatabaseStatsInclude Section, string Key,
         Func<RavenDbAdminClient, string, CancellationToken, Task<object?>> Fetch)[] StatsSections =
     [
@@ -67,7 +65,6 @@ public static class DatabaseTools
         (DatabaseStatsInclude.Io,               "io",               async (c, db, ct) => await c.GetIoStats(db, ct)),
     ];
 
-    // Feature toggles/policies live in the database record; one fetch covers all of them.
     private static readonly (DatabaseConfigSection Section, string RecordKey, string Label)[] FeatureSections =
     [
         (DatabaseConfigSection.Expiration, "Expiration", "expiration"),
