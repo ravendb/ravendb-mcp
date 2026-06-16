@@ -60,18 +60,6 @@ public static class DiagnosticsExpansionTools
         return client.ExportLogs(from, to, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_collection_sample_shape", ReadOnly = true)]
-    [Description("Infer the field shape of a collection by sampling a few documents (sampleSize 1-25). Returns field name -> observed JSON value kinds (no document values). Use to learn a collection's structure cheaply.")]
-    public static Task<GetCollectionSampleShapeResult> GetCollectionSampleShape(
-        RavenDbAdminClient client,
-        string databaseName,
-        string collectionName,
-        int? sampleSize,
-        CancellationToken cancellationToken)
-    {
-        return client.GetCollectionSampleShape(databaseName, collectionName, sampleSize, cancellationToken);
-    }
-
     [McpServerTool(Name = "scan_corrupted_document_ids", ReadOnly = true, UseStructuredContent = true)]
     [Description("Scan a database for corrupted document ids and write the result to a local artifact file. Returns the artifact path, content type, and byte size.")]
     public static Task<DiagnosticArtifactResult> ScanCorruptedDocumentIds(
@@ -80,18 +68,6 @@ public static class DiagnosticsExpansionTools
         CancellationToken cancellationToken)
     {
         return client.ScanCorruptedDocumentIds(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "export_document_ids", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Export document ids (metadata-only, optional startsWith prefix, pageSize 1-10000) to a local artifact file. Returns the artifact path, content type, and byte size (ids only, no document bodies).")]
-    public static Task<DiagnosticArtifactResult> ExportDocumentIds(
-        RavenDbAdminClient client,
-        string databaseName,
-        string? startsWith,
-        int? pageSize,
-        CancellationToken cancellationToken)
-    {
-        return client.ExportDocumentIds(databaseName, startsWith, pageSize, cancellationToken);
     }
 
     [McpServerTool(Name = "find_missing_attachments", ReadOnly = true, UseStructuredContent = true)]
@@ -103,18 +79,6 @@ public static class DiagnosticsExpansionTools
         CancellationToken cancellationToken)
     {
         return client.FindMissingAttachments(databaseName, collectionName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "query_metadata_only", ReadOnly = true)]
-    [Description("Run an RQL query but return ONLY metadata (duration, total/skipped/scanned results, index, staleness, last query time, result etag) — no rows. Cheap query probe. Use run_query when you need the rows.")]
-    public static Task<QueryMetadataOnlyResult> QueryMetadataOnly(
-        RavenDbAdminClient client,
-        string databaseName,
-        string query,
-        int? pageSize,
-        CancellationToken cancellationToken)
-    {
-        return client.QueryMetadataOnly(databaseName, query, pageSize, cancellationToken);
     }
 
     [McpServerTool(Name = "collect_debug_package", ReadOnly = true, UseStructuredContent = true)]

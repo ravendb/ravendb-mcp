@@ -57,17 +57,6 @@ public sealed class DataAndShapeTests(RavenDbTestFixture fixture)
     }
 
     [Fact]
-    public async Task QueryMetadataOnlyExposesParsedShapeWithoutRows()
-    {
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-
-        var metadata = (await NewClient().QueryMetadataOnly(fixture.DatabaseName, "from TestUsers", 0, cts.Token)).Metadata;
-
-        Assert.Equal(JsonValueKind.Number, metadata.GetProperty("TotalResults").ValueKind);
-        Assert.False(metadata.TryGetProperty("Results", out _));
-    }
-
-    [Fact]
     public async Task WaitForIndexingCompletesUsingTypedStatistics()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));

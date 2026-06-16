@@ -83,18 +83,11 @@ public sealed record GetTrafficWatchConfigurationResult(JsonElement Configuratio
 
 public sealed record GetNotificationsResult(string? DatabaseName, JsonElement Notifications);
 
-public sealed record GetCollectionSampleShapeResult(
-    string DatabaseName,
-    string CollectionName,
-    JsonElement Shape);
-
 public sealed record GetHugeDocumentsReportResult(string DatabaseName, JsonElement Report);
 
 public sealed record GetDocumentRevisionsResult(string DatabaseName, string DocumentId, JsonElement Revisions);
 
 public sealed record GetRevisionsCollectionStatsResult(string DatabaseName, JsonElement Stats);
-
-public sealed record QueryMetadataOnlyResult(string DatabaseName, JsonElement Metadata);
 
 public sealed record CollectDiagnosticSnapshotResult(
     string DatabaseName,

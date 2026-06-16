@@ -50,29 +50,4 @@ public sealed class RawHttpDiagnosticsTests
         Assert.Equal("admin log line", await File.ReadAllTextAsync(result.Path));
     }
 
-    [Fact]
-    public async Task QueryMetadataOnlyDoesNotReturnRows()
-    {
-        await using var server = new FakeRavenHttpServer();
-        server.Json(
-            "/databases/Test/queries",
-            """
-            {
-              "Results": [{"Name":"Ada"}],
-              "TotalResults": 1,
-              "IndexName": "Auto/Test/ByName",
-              "IsStale": false,
-              "DurationInMs": 3
-            }
-            """);
-
-        using var store = new DocumentStore { Urls = [server.Url] };
-        var client = new RavenDbAdminClient(store, Options.Create(new RavenDbOptions { Urls = [server.Url] }));
-
-        var result = await client.QueryMetadataOnly("Test", "from Test", 1, CancellationToken.None);
-
-        Assert.Equal(JsonValueKind.Number, result.Metadata.GetProperty("TotalResults").ValueKind);
-        Assert.Equal(JsonValueKind.String, result.Metadata.GetProperty("IndexName").ValueKind);
-        Assert.False(result.Metadata.TryGetProperty("Results", out _));
-    }
 }
