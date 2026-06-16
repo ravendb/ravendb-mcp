@@ -1,4 +1,8 @@
 using System.Text.Json;
+using Raven.Client.Documents.Operations.ConnectionStrings;
+using Raven.Client.Documents.Operations.ETL.SQL;
+using Raven.Client.ServerWide;
+using Raven.Client.ServerWide.Operations;
 using RavenDB.Mcp.RavenDB;
 
 namespace RavenDB.Mcp.Tests;
@@ -26,6 +30,47 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
 
         Assert.Equal(fixture.DatabaseName, databaseRecord.DatabaseName);
         Assert.Equal(fixture.DatabaseName, databaseRecord.Record.GetProperty("DatabaseName").GetString());
+    }
+
+    [Fact]
+    public async Task RedactsConnectionStringSecretsInDatabaseRecord()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        const string secret = "Sup3rSecretEtlPassword!";
+
+        // Isolated database so the secret never lingers in the shared fixture state.
+        var databaseName = $"RavenDB_Mcp_Redaction_{Guid.NewGuid():N}";
+        await fixture.Store.Maintenance.Server.SendAsync(
+            new CreateDatabaseOperation(new DatabaseRecord(databaseName)), timeout.Token);
+
+        try
+        {
+            await fixture.Store.Maintenance.ForDatabase(databaseName).SendAsync(
+                new PutConnectionStringOperation<SqlConnectionString>(new SqlConnectionString
+                {
+                    Name = "reporting-sql",
+                    FactoryName = "System.Data.SqlClient",
+                    ConnectionString = $"Server=db;User Id=sa;Password={secret}"
+                }),
+                timeout.Token);
+
+            var record = await new RavenDbAdminClient(fixture.Store).GetDatabaseRecord(databaseName, timeout.Token);
+            var raw = record.Record.GetRawText();
+
+            Assert.DoesNotContain(secret, raw);
+            Assert.Equal(
+                "***redacted***",
+                record.Record
+                    .GetProperty("SqlConnectionStrings")
+                    .GetProperty("reporting-sql")
+                    .GetProperty("ConnectionString")
+                    .GetString());
+        }
+        finally
+        {
+            await fixture.Store.Maintenance.Server.SendAsync(
+                new DeleteDatabasesOperation(databaseName, hardDelete: true), timeout.Token);
+        }
     }
 
     [Fact]
