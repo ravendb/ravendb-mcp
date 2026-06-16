@@ -8,27 +8,6 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DatabaseActivityTools
 {
-    [McpServerTool(Name = "get_subscriptions", ReadOnly = true)]
-    [Description("All data subscriptions defined on a database: name, query, and configuration per subscription.")]
-    public static Task<GetSubscriptionsResult> GetSubscriptions(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetSubscriptions(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_subscription_state", ReadOnly = true)]
-    [Description("Runtime state of one subscription: change vector / processing position and last-batch info.")]
-    public static Task<GetSubscriptionStateResult> GetSubscriptionState(
-        RavenDbAdminClient client,
-        string databaseName,
-        string subscriptionName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetSubscriptionState(databaseName, subscriptionName, cancellationToken);
-    }
-
     [McpServerTool(Name = "get_identities", ReadOnly = true)]
     [Description("Identity counters for a database (the server-side sequence values behind identity document ids).")]
     public static Task<GetIdentitiesResult> GetIdentities(

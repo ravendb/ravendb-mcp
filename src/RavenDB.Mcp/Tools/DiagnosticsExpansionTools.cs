@@ -48,36 +48,6 @@ public static class DiagnosticsExpansionTools
         return client.GetDocumentConflicts(databaseName, documentId, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_backup_diagnostics", ReadOnly = true)]
-    [Description("Backup diagnostics for a database: backup tasks, next-occurrence timers, and server-wide backup configurations. Sections are availability-wrapped.")]
-    public static Task<GetBackupDiagnosticsResult> GetBackupDiagnostics(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetBackupDiagnostics(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_etl_diagnostics", ReadOnly = true)]
-    [Description("ETL diagnostics for a database: ETL tasks, stats, performance, debug stats, and progress. Sections are availability-wrapped.")]
-    public static Task<GetEtlDiagnosticsResult> GetEtlDiagnostics(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetEtlDiagnostics(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_subscription_diagnostics", ReadOnly = true)]
-    [Description("Subscription diagnostics for a database: subscriptions, their state, and active connection details. Sections are availability-wrapped.")]
-    public static Task<GetSubscriptionDiagnosticsResult> GetSubscriptionDiagnostics(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetSubscriptionDiagnostics(databaseName, cancellationToken);
-    }
-
     [McpServerTool(Name = "export_logs", ReadOnly = true, UseStructuredContent = true)]
     [Description("Download server logs for an optional time range to a local artifact file. Returns the artifact path, content type, and byte size (not the log contents inline).")]
     public static Task<DiagnosticArtifactResult> ExportLogs(
