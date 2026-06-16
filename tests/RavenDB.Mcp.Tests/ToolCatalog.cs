@@ -27,11 +27,7 @@ internal static class ToolCatalog
         "list_databases",
         "query_metadata_only",
         "run_query",
-        "sample_admin_logs",
-        "sample_cluster_dashboard",
-        "sample_runtime_events",
-        "sample_thread_diagnostics",
-        "sample_traffic_watch",
+        "sample_live_feed",
         "scan_corrupted_document_ids",
         "wait_for_completion"
     ];

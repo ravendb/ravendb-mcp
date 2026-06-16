@@ -57,28 +57,6 @@ public static class StoragePerformanceTools
         return result;
     }
 
-    [McpServerTool(Name = "sample_runtime_events", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Stream a few seconds (1-30) of runtime events. kind 'gc' samples GC events, otherwise allocations. Returns raw text with Truncated/Limit flags when capped.")]
-    public static Task<SampleRuntimeEventsResult> SampleRuntimeEvents(
-        RavenDbAdminClient client,
-        string kind,
-        int seconds,
-        CancellationToken cancellationToken)
-    {
-        return client.SampleRuntimeEvents(kind, seconds, cancellationToken);
-    }
-
-    [McpServerTool(Name = "sample_thread_diagnostics", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Thread diagnostics. kind 'contention' streams a few seconds (1-30) of lock-contention events; otherwise returns the current runaway-threads snapshot. Returns raw text with Truncated/Limit flags.")]
-    public static Task<SampleThreadDiagnosticsResult> SampleThreadDiagnostics(
-        RavenDbAdminClient client,
-        string kind,
-        int seconds,
-        CancellationToken cancellationToken)
-    {
-        return client.SampleThreadDiagnostics(kind, seconds, cancellationToken);
-    }
-
     [McpServerTool(Name = "get_network_details", ReadOnly = true)]
     [Description("TCP/network details: Stats (server connection counts + bytes), Connections (active TCP connections — server-wide, or per database when databaseName is given), DatabaseInfo (endpoint a client/node uses to reach a database on a node — needs databaseName + nodeTag). Choose sections with include; default is Stats + Connections.")]
     public static async Task<Dictionary<string, object?>> GetNetworkDetails(
@@ -154,10 +132,6 @@ public sealed record GetProcessStatsResult(JsonElement Process);
 public sealed record GetLowMemoryLogResult(JsonElement Log);
 
 public sealed record GetEncryptionBufferPoolStatsResult(JsonElement BufferPool);
-
-public sealed record SampleRuntimeEventsResult(string Kind, int Seconds, string Sample, bool Truncated, int Limit);
-
-public sealed record SampleThreadDiagnosticsResult(string Kind, int Seconds, string Sample, bool Truncated, int Limit);
 
 public sealed record GetStackTracesResult(JsonElement StackTraces);
 

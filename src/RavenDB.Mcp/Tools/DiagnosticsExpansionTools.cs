@@ -7,14 +7,26 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DiagnosticsExpansionTools
 {
-    [McpServerTool(Name = "sample_cluster_dashboard", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Stream a few seconds (1-30) of the live cluster dashboard feed (throughput, requests, indexing, storage). Returns raw text with Truncated/Limit flags when capped.")]
-    public static Task<DiagnosticTextSampleResult> SampleClusterDashboard(
+    [McpServerTool(Name = "sample_live_feed", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Pull a live server feed for a few seconds and return what streamed in. feed selects the source: AdminLogs (operational logs), ClusterDashboard (throughput/requests/indexing/storage), TrafficWatch (HTTP/TCP requests as they happen — optional databaseName filter), GcEvents, Allocations, ThreadContention, or ThreadRunaway (a one-shot snapshot, ignores seconds). seconds is the capture window, 1-30. Returns the captured text with Truncated/Limit flags when capped.")]
+    public static Task<DiagnosticTextSampleResult> SampleLiveFeed(
         RavenDbAdminClient client,
-        int seconds,
+        [Description("Which live feed to pull.")] FeedKind feed,
+        [Description("Capture window in seconds, 1-30 (ignored for ThreadRunaway).")] int seconds,
+        [Description("For TrafficWatch: optionally scope the capture to one database.")] string? databaseName,
         CancellationToken cancellationToken)
     {
-        return client.SampleClusterDashboard(seconds, cancellationToken);
+        return feed switch
+        {
+            FeedKind.AdminLogs => client.SampleAdminLogs(seconds, cancellationToken),
+            FeedKind.ClusterDashboard => client.SampleClusterDashboard(seconds, cancellationToken),
+            FeedKind.TrafficWatch => client.SampleTrafficWatch(seconds, databaseName, cancellationToken),
+            FeedKind.GcEvents => client.SampleRuntimeEvents("gc", seconds, cancellationToken),
+            FeedKind.Allocations => client.SampleRuntimeEvents("allocations", seconds, cancellationToken),
+            FeedKind.ThreadContention => client.SampleThreadDiagnostics("contention", seconds, cancellationToken),
+            FeedKind.ThreadRunaway => client.SampleThreadDiagnostics("runaway", seconds, cancellationToken),
+            _ => throw new ArgumentOutOfRangeException(nameof(feed))
+        };
     }
 
     [McpServerTool(Name = "wait_for_completion", ReadOnly = true)]
@@ -46,27 +58,6 @@ public static class DiagnosticsExpansionTools
         CancellationToken cancellationToken)
     {
         return client.ExportLogs(from, to, cancellationToken);
-    }
-
-    [McpServerTool(Name = "sample_traffic_watch", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Listen to the live traffic-watch feed for a few seconds (1-30) and return what was captured (HTTP/TCP requests as they happen). Optionally filter to one database. Returns raw text with Truncated/Limit flags when capped. The capture window is set by 'seconds'.")]
-    public static Task<DiagnosticTextSampleResult> SampleTrafficWatch(
-        RavenDbAdminClient client,
-        int seconds,
-        string? databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.SampleTrafficWatch(seconds, databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "sample_admin_logs", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Stream a few seconds (1-30) of the live server log feed. Returns raw text with Truncated/Limit flags when capped. Use for a quick look at current logging.")]
-    public static Task<DiagnosticTextSampleResult> SampleAdminLogs(
-        RavenDbAdminClient client,
-        int seconds,
-        CancellationToken cancellationToken)
-    {
-        return client.SampleAdminLogs(seconds, cancellationToken);
     }
 
     [McpServerTool(Name = "get_collection_sample_shape", ReadOnly = true)]

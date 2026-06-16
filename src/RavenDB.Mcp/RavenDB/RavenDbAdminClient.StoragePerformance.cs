@@ -161,7 +161,7 @@ public sealed partial class RavenDbAdminClient
         return new GetEncryptionBufferPoolStatsResult(await GetServerJson("/admin/debug/memory/encryption-buffer-pool", cancellationToken));
     }
 
-    public async Task<SampleRuntimeEventsResult> SampleRuntimeEvents(
+    public async Task<DiagnosticTextSampleResult> SampleRuntimeEvents(
         string kind,
         int seconds,
         CancellationToken cancellationToken)
@@ -171,7 +171,7 @@ public sealed partial class RavenDbAdminClient
             : "/admin/debug/memory/allocations";
 
         var sample = await GetServerTextSample(path, seconds, cancellationToken);
-        return new SampleRuntimeEventsResult(
+        return new DiagnosticTextSampleResult(
             kind,
             Math.Clamp(seconds, 1, 30),
             sample.Text,
@@ -179,7 +179,7 @@ public sealed partial class RavenDbAdminClient
             sample.Limit);
     }
 
-    public async Task<SampleThreadDiagnosticsResult> SampleThreadDiagnostics(
+    public async Task<DiagnosticTextSampleResult> SampleThreadDiagnostics(
         string kind,
         int seconds,
         CancellationToken cancellationToken)
@@ -188,11 +188,12 @@ public sealed partial class RavenDbAdminClient
             ? "/admin/debug/threads/contention"
             : "/admin/debug/threads/runaway";
 
+        // The runaway feed is a one-shot snapshot, not a streamed window.
         if (path.EndsWith("/runaway", StringComparison.Ordinal))
-            return new SampleThreadDiagnosticsResult(kind, 0, await GetServerText(path, cancellationToken), false, 0);
+            return new DiagnosticTextSampleResult(kind, 0, await GetServerText(path, cancellationToken), false, 0);
 
         var sample = await GetServerTextSample(path, seconds, cancellationToken);
-        return new SampleThreadDiagnosticsResult(
+        return new DiagnosticTextSampleResult(
             kind,
             Math.Clamp(seconds, 1, 30),
             sample.Text,

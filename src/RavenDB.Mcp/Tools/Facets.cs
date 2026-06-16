@@ -4,6 +4,31 @@ namespace RavenDB.Mcp.Tools;
 // JSON-Schema `enum`, so the agent sees the exact allowed values. One enum per facet tool;
 // added alongside the tool that uses it (no unused selectors).
 
+/// <summary>Which live server feed <c>sample_live_feed</c> listens to.</summary>
+public enum FeedKind
+{
+    /// <summary>Operational server logs (live).</summary>
+    AdminLogs,
+
+    /// <summary>Cluster dashboard feed (throughput, requests, indexing, storage).</summary>
+    ClusterDashboard,
+
+    /// <summary>Traffic-watch feed (HTTP/TCP requests as they happen). Optional databaseName filter.</summary>
+    TrafficWatch,
+
+    /// <summary>GC events.</summary>
+    GcEvents,
+
+    /// <summary>Allocation events.</summary>
+    Allocations,
+
+    /// <summary>Lock-contention events.</summary>
+    ThreadContention,
+
+    /// <summary>Runaway-threads snapshot.</summary>
+    ThreadRunaway
+}
+
 /// <summary>What <c>wait_for_completion</c> blocks on.</summary>
 public enum WaitCondition
 {
