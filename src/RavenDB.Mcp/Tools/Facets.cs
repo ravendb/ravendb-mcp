@@ -108,6 +108,28 @@ public enum DatabaseConfigSection
     SchemaValidation
 }
 
+/// <summary>Per-document sections returned by <c>get_document_data</c>.</summary>
+public enum DocumentInclude
+{
+    /// <summary>The document body and its @metadata.</summary>
+    Document,
+
+    /// <summary>The document's counters.</summary>
+    Counters,
+
+    /// <summary>The document's attachments (names, sizes, hashes from @metadata).</summary>
+    Attachments,
+
+    /// <summary>A time series on the document (requires timeSeriesName).</summary>
+    TimeSeries,
+
+    /// <summary>The document's revision history.</summary>
+    Revisions,
+
+    /// <summary>Replication conflicts for the document.</summary>
+    Conflicts
+}
+
 /// <summary>Per-index views returned by <c>get_index</c>.</summary>
 public enum IndexInclude
 {

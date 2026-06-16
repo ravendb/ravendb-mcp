@@ -1,6 +1,9 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Raven.Client.Documents;
+using Raven.Client.Documents.Operations.Counters;
+using Raven.Client.Documents.Operations.TimeSeries;
 using RavenDB.Mcp.Tools;
 
 namespace RavenDB.Mcp.RavenDB;
@@ -39,6 +42,37 @@ public sealed partial class RavenDbAdminClient
         }
 
         return new GetDocumentResult(databaseName, id, false, ToJson<object?>(null));
+    }
+
+    public async Task<JsonElement> GetDocumentCounters(string databaseName, string id, CancellationToken cancellationToken)
+    {
+        ValidateDatabaseName(databaseName);
+        ValidateName(id, "Document id", nameof(id));
+
+        var counters = await store.Operations.ForDatabase(databaseName).SendAsync(
+            new GetCountersOperation(id),
+            token: cancellationToken);
+
+        return ToJson(counters);
+    }
+
+    public async Task<JsonElement> GetDocumentTimeSeries(
+        string databaseName,
+        string id,
+        string name,
+        DateTime? from,
+        DateTime? to,
+        CancellationToken cancellationToken)
+    {
+        ValidateDatabaseName(databaseName);
+        ValidateName(id, "Document id", nameof(id));
+        ValidateName(name, "Time series name", nameof(name));
+
+        var series = await store.Operations.ForDatabase(databaseName).SendAsync(
+            new GetTimeSeriesOperation(id, name, from, to),
+            token: cancellationToken);
+
+        return ToJson(series);
     }
 
     public async Task<RunQueryResult> RunQuery(

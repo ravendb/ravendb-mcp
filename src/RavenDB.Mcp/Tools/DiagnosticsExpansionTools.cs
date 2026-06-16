@@ -37,17 +37,6 @@ public static class DiagnosticsExpansionTools
         };
     }
 
-    [McpServerTool(Name = "get_document_conflicts", ReadOnly = true)]
-    [Description("Replication conflicts for one document id: conflicting change vectors/versions, if any exist.")]
-    public static Task<GetDocumentConflictsResult> GetDocumentConflicts(
-        RavenDbAdminClient client,
-        string databaseName,
-        string documentId,
-        CancellationToken cancellationToken)
-    {
-        return client.GetDocumentConflicts(databaseName, documentId, cancellationToken);
-    }
-
     [McpServerTool(Name = "export_logs", ReadOnly = true, UseStructuredContent = true)]
     [Description("Download server logs for an optional time range to a local artifact file. Returns the artifact path, content type, and byte size (not the log contents inline).")]
     public static Task<DiagnosticArtifactResult> ExportLogs(
@@ -100,19 +89,6 @@ public static class DiagnosticsExpansionTools
         CancellationToken cancellationToken)
     {
         return client.ScanCorruptedDocumentIds(databaseName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_document_revisions", ReadOnly = true)]
-    [Description("Paged revision history for one document id (start/pageSize, 1-1024). Returns the stored revisions including their contents.")]
-    public static Task<GetDocumentRevisionsResult> GetDocumentRevisions(
-        RavenDbAdminClient client,
-        string databaseName,
-        string documentId,
-        int? start,
-        int? pageSize,
-        CancellationToken cancellationToken)
-    {
-        return client.GetDocumentRevisions(databaseName, documentId, start, pageSize, cancellationToken);
     }
 
     [McpServerTool(Name = "export_document_ids", ReadOnly = true, UseStructuredContent = true)]
