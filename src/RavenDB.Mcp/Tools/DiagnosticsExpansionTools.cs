@@ -22,10 +22,10 @@ public static class DiagnosticsExpansionTools
             FeedKind.AdminLogs => client.SampleAdminLogs(seconds, cancellationToken),
             FeedKind.ClusterDashboard => client.SampleClusterDashboard(seconds, cancellationToken),
             FeedKind.TrafficWatch => client.SampleTrafficWatch(seconds, databaseName, cancellationToken),
-            FeedKind.GcEvents => client.SampleRuntimeEvents("gc", seconds, cancellationToken),
-            FeedKind.Allocations => client.SampleRuntimeEvents("allocations", seconds, cancellationToken),
-            FeedKind.ThreadContention => client.SampleThreadDiagnostics("contention", seconds, cancellationToken),
-            FeedKind.ThreadRunaway => client.SampleThreadDiagnostics("runaway", seconds, cancellationToken),
+            FeedKind.GcEvents => client.SampleGcEvents(seconds, cancellationToken),
+            FeedKind.Allocations => client.SampleAllocations(seconds, cancellationToken),
+            FeedKind.ThreadContention => client.SampleThreadContention(seconds, cancellationToken),
+            FeedKind.ThreadRunaway => client.SampleThreadRunaway(cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(feed))
         };
     }

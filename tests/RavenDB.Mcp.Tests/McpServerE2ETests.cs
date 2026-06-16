@@ -150,7 +150,7 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
         Assert.True(aiAgents.RootElement.TryGetProperty("available", out _));
 
         using var feed = await client.CallTool("sample_live_feed", new { feed = "GcEvents", seconds = 1 }, timeout.Token);
-        Assert.Equal("gc", feed.RootElement.GetProperty("kind").GetString());
+        Assert.Equal("gc_events", feed.RootElement.GetProperty("kind").GetString());
         Assert.Equal(131_072, feed.RootElement.GetProperty("limit").GetInt32());
 
         using var wait = await client.CallTool(

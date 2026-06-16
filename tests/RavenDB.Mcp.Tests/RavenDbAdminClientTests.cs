@@ -165,12 +165,12 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
         Assert.Equal(JsonValueKind.Object, (await client.ListTcpConnections(null, timeout.Token)).Connections.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.ListTcpConnections(fixture.DatabaseName, timeout.Token)).Connections.ValueKind);
 
-        var runtimeEvents = await client.SampleRuntimeEvents("gc", 1, timeout.Token);
-        Assert.Equal("gc", runtimeEvents.Kind);
+        var runtimeEvents = await client.SampleGcEvents(1, timeout.Token);
+        Assert.Equal("gc_events", runtimeEvents.Kind);
         Assert.Equal(1, runtimeEvents.Seconds);
 
-        var threadDiagnostics = await client.SampleThreadDiagnostics("runaway", 1, timeout.Token);
-        Assert.Equal("runaway", threadDiagnostics.Kind);
+        var threadDiagnostics = await client.SampleThreadRunaway(timeout.Token);
+        Assert.Equal("thread_runaway", threadDiagnostics.Kind);
         Assert.NotEmpty(threadDiagnostics.Sample);
     }
 }

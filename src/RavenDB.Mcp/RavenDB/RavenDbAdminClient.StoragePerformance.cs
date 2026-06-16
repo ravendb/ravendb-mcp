@@ -161,15 +161,14 @@ public sealed partial class RavenDbAdminClient
         return new GetEncryptionBufferPoolStatsResult(await GetServerJson("/admin/debug/memory/encryption-buffer-pool", cancellationToken));
     }
 
-    public async Task<DiagnosticTextSampleResult> SampleRuntimeEvents(
+    // Streamed server text feeds. One named method per feed keeps the selection type-safe at the
+    // call site (the sample_live_feed tool dispatches its FeedKind enum here — no magic strings).
+    private async Task<DiagnosticTextSampleResult> SampleServerTextFeed(
         string kind,
+        string path,
         int seconds,
         CancellationToken cancellationToken)
     {
-        var path = kind.Equals("gc", StringComparison.OrdinalIgnoreCase)
-            ? "/admin/debug/memory/gc-events"
-            : "/admin/debug/memory/allocations";
-
         var sample = await GetServerTextSample(path, seconds, cancellationToken);
         return new DiagnosticTextSampleResult(
             kind,
@@ -179,27 +178,18 @@ public sealed partial class RavenDbAdminClient
             sample.Limit);
     }
 
-    public async Task<DiagnosticTextSampleResult> SampleThreadDiagnostics(
-        string kind,
-        int seconds,
-        CancellationToken cancellationToken)
-    {
-        var path = kind.Equals("contention", StringComparison.OrdinalIgnoreCase)
-            ? "/admin/debug/threads/contention"
-            : "/admin/debug/threads/runaway";
+    public Task<DiagnosticTextSampleResult> SampleGcEvents(int seconds, CancellationToken cancellationToken)
+        => SampleServerTextFeed("gc_events", "/admin/debug/memory/gc-events", seconds, cancellationToken);
 
-        // The runaway feed is a one-shot snapshot, not a streamed window.
-        if (path.EndsWith("/runaway", StringComparison.Ordinal))
-            return new DiagnosticTextSampleResult(kind, 0, await GetServerText(path, cancellationToken), false, 0);
+    public Task<DiagnosticTextSampleResult> SampleAllocations(int seconds, CancellationToken cancellationToken)
+        => SampleServerTextFeed("allocations", "/admin/debug/memory/allocations", seconds, cancellationToken);
 
-        var sample = await GetServerTextSample(path, seconds, cancellationToken);
-        return new DiagnosticTextSampleResult(
-            kind,
-            Math.Clamp(seconds, 1, 30),
-            sample.Text,
-            sample.Truncated,
-            sample.Limit);
-    }
+    public Task<DiagnosticTextSampleResult> SampleThreadContention(int seconds, CancellationToken cancellationToken)
+        => SampleServerTextFeed("thread_contention", "/admin/debug/threads/contention", seconds, cancellationToken);
+
+    // Runaway threads is a one-shot snapshot, not a streamed window — no sample window applies.
+    public async Task<DiagnosticTextSampleResult> SampleThreadRunaway(CancellationToken cancellationToken)
+        => new("thread_runaway", 0, await GetServerText("/admin/debug/threads/runaway", cancellationToken), false, 0);
 
     public async Task<GetStackTracesResult> GetStackTraces(CancellationToken cancellationToken)
     {
