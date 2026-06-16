@@ -73,7 +73,27 @@ public sealed partial class RavenDbAdminClient
             new GetTimeSeriesOperation(id, name, from, to),
             token: cancellationToken);
 
-        return ToJson(series);
+        // Project to a clean shape: the raw TimeSeriesRangeResult carries an Includes
+        // BlittableJsonReaderObject that System.Text.Json cannot serialize, and the agent only needs
+        // the entries. (A document with no such series returns null.)
+        if (series is null)
+            return ToJson(new { documentId = id, name, found = false });
+
+        return ToJson(new
+        {
+            documentId = id,
+            name,
+            from = series.From,
+            to = series.To,
+            totalResults = series.TotalResults,
+            entries = series.Entries.Select(entry => new
+            {
+                timestamp = entry.Timestamp,
+                values = entry.Values,
+                tag = entry.Tag,
+                isRollup = entry.IsRollup
+            })
+        });
     }
 
     public async Task<JsonElement> GetCompareExchange(
