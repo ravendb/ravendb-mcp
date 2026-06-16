@@ -104,6 +104,7 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
 
         using var tasks = await client.CallTool("get_tasks", new { databaseName = fixture.DatabaseName }, timeout.Token);
         Assert.Equal(JsonValueKind.Object, tasks.RootElement.GetProperty("tasks").ValueKind);
+        AssertNoSections(tasks, "info", "subscriptionState", "diagnostics"); // default mode emits only `tasks`
 
         using var taskDiagnostics = await client.CallTool(
             "get_tasks",
@@ -164,12 +165,41 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
             new { from = (string?)null, to = (string?)null },
             timeout.Token);
         Assert.NotEmpty(exportedLogs.RootElement.GetProperty("path").GetString()!);
+
+        // --- facet dispatch correctness over the protocol: prove default resolution and single-section
+        // selection, asserting ABSENCE of unselected sections (the 'all keys present' asserts above can't). ---
+        using var indexDefault = await client.CallTool(
+            "get_index",
+            new { databaseName = fixture.DatabaseName, indexName = fixture.IndexName },
+            timeout.Token);
+        AssertSections(indexDefault, "definition", "staleness"); // the default include set
+        AssertNoSections(indexDefault, "terms", "debug", "errors", "performance");
+
+        using var statsOne = await client.CallTool(
+            "get_database_stats",
+            new { databaseName = fixture.DatabaseName, include = new[] { "Tombstones" } },
+            timeout.Token);
+        AssertSections(statsOne, "tombstones");
+        AssertNoSections(statsOne, "summary", "collections", "indexing");
+
+        // The attachments projection branch runs (the seeded doc has none, so null is acceptable).
+        using var attachments = await client.CallTool(
+            "get_document_data",
+            new { databaseName = fixture.DatabaseName, id = documentId, include = new[] { "Attachments" } },
+            timeout.Token);
+        Assert.True(attachments.RootElement.TryGetProperty("attachments", out _));
     }
 
     private static void AssertSections(JsonDocument document, params string[] sections)
     {
         foreach (var section in sections)
             Assert.True(document.RootElement.TryGetProperty(section, out _), $"missing facet section '{section}'");
+    }
+
+    private static void AssertNoSections(JsonDocument document, params string[] sections)
+    {
+        foreach (var section in sections)
+            Assert.False(document.RootElement.TryGetProperty(section, out _), $"unexpected facet section '{section}'");
     }
 
     [Fact]

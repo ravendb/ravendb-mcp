@@ -38,6 +38,12 @@ public sealed class McpToolContractTests
     [InlineData("wait_for_completion", "{\"databaseName\":\"x\",\"condition\":\"Operation\",\"timeoutSeconds\":5}", "operationId is required")]
     [InlineData("collect_debug_package", "{\"scope\":\"Database\"}", "databaseName is required")]
     [InlineData("get_tasks", "{\"databaseName\":\"x\",\"taskId\":5}", "taskType is required")]
+    [InlineData("get_document_data", "{\"databaseName\":\"x\",\"id\":\"y\",\"include\":[\"TimeSeries\"]}", "timeSeriesName is required")]
+    [InlineData("get_live_workload", "{\"include\":[\"Queries\"]}", "databaseName is required")]
+    [InlineData("get_live_workload", "{\"include\":[\"Operations\"],\"operationId\":5}", "databaseName is required")]
+    [InlineData("get_tasks", "{\"databaseName\":\"x\",\"includeDiagnostics\":true}", "taskType is required when includeDiagnostics is set")]
+    [InlineData("get_tasks", "{\"databaseName\":\"x\",\"taskType\":\"QueueSink\",\"includeDiagnostics\":true}", "No deep diagnostics available for task type")]
+    [InlineData("get_network_details", "{\"include\":[\"DatabaseInfo\"]}", "databaseName is required")]
     public async Task MissingRequiredArgumentSurfacesActionableMessage(string tool, string argsJson, string expectedMessage)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
