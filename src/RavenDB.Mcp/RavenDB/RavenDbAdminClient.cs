@@ -3,6 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
@@ -55,42 +56,105 @@ public sealed partial class RavenDbAdminClient(
         return store.Maintenance.ForDatabase(databaseName);
     }
 
-    // Connection-string sections embed secrets (SQL passwords, S3/Azure/GCP keys, SAS tokens,
-    // Elasticsearch/AI API keys). Mask any value whose key is a known secret field before it leaves
-    // the server (ADR-0011). Exact key match (case-insensitive) to avoid over-redacting unrelated fields.
-    private static readonly HashSet<string> SecretKeys = new(StringComparer.OrdinalIgnoreCase)
+    // Hybrid secret redaction at the record boundary (ADR-0011): secrets live in the connection-string
+    // sections (SQL passwords, S3/Azure/GCS keys, SAS tokens, Elasticsearch/AI keys). Inside those
+    // sections we redact precisely — masking known secret FIELDS and tokenizing connection-string TEXT
+    // so only the secret is hidden (Server/Database survive). Everywhere else a narrow key-name backstop
+    // catches stray secrets in unknown/new sections (defense-in-depth; fail-safe over fail-open).
+    private static readonly HashSet<string> SecretContainers = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Password", "ApiKey", "Secret", "SecretKey", "AccessKey", "AccountKey",
-        "AwsSecretKey", "AwsAccessKey", "SasToken", "ConnectionString", "GoogleCredentialsJson"
+        "SqlConnectionStrings", "OlapConnectionStrings", "ElasticSearchConnectionStrings",
+        "QueueConnectionStrings", "RavenConnectionStrings", "AiConnectionStrings"
     };
+
+    // Broad set — masked when nested inside a secret container (ambiguous names are safe there).
+    private static readonly HashSet<string> ScopedSecretKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Password", "Pwd", "ApiKey", "ApiKeyId", "Secret", "SecretKey", "AccessKey", "AccountKey",
+        "AwsSecretKey", "AwsAccessKey", "SasToken", "SharedAccessKey", "GoogleCredentialsJson",
+        "CertificateBase64", "Token", "AuthToken"
+    };
+
+    // Unambiguous subset — the global backstop, masked anywhere in the record.
+    private static readonly HashSet<string> GlobalSecretKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Password", "ApiKey", "SecretKey", "AccountKey", "AwsSecretKey",
+        "SasToken", "SharedAccessKey", "GoogleCredentialsJson"
+    };
+
+    // Secret tokens inside connection-string TEXT (k=v;…, incl. prefixed forms like sasl.password,
+    // client_secret) and credentials embedded in URL userinfo (scheme://user:pass@host).
+    private static readonly Regex ConnectionStringSecret = new(
+        @"(?i)([\w.]*(?:password|pwd|accountkey|sharedaccesssignature|sharedaccesskey|secretkey|secret|accesskey|apikey|sig))(\s*=\s*)([^;]*)",
+        RegexOptions.Compiled);
+    private static readonly Regex UrlCredential = new(@"://([^:/?@\s]+):([^@/?\s]+)@", RegexOptions.Compiled);
 
     private const string RedactedValue = "***redacted***";
 
-    private static JsonElement RedactSecrets(JsonElement element)
+    internal static JsonElement RedactSecrets(JsonElement element)
     {
         var node = JsonNode.Parse(element.GetRawText());
-        RedactNode(node);
+        RedactNode(node, inSecretContainer: false);
         return JsonSerializer.SerializeToElement(node);
     }
 
-    private static void RedactNode(JsonNode? node)
+    private static void RedactNode(JsonNode? node, bool inSecretContainer)
     {
         switch (node)
         {
             case JsonObject obj:
                 foreach (var property in obj.ToArray())
                 {
-                    if (property.Value is JsonValue && SecretKeys.Contains(property.Key))
-                        obj[property.Key] = RedactedValue;
+                    if (property.Value is JsonValue value)
+                    {
+                        var redacted = RedactScalar(property.Key, value, inSecretContainer);
+                        if (redacted is not null)
+                            obj[property.Key] = redacted;
+                    }
                     else
-                        RedactNode(property.Value);
+                    {
+                        RedactNode(property.Value, inSecretContainer || SecretContainers.Contains(property.Key));
+                    }
                 }
                 break;
             case JsonArray array:
-                foreach (var item in array)
-                    RedactNode(item);
+                for (var i = 0; i < array.Count; i++)
+                {
+                    if (array[i] is JsonValue value && value.TryGetValue(out string? text) && text is not null)
+                    {
+                        var masked = RedactInlineSecrets(text);
+                        if (!string.Equals(masked, text, StringComparison.Ordinal))
+                            array[i] = masked;
+                    }
+                    else
+                    {
+                        RedactNode(array[i], inSecretContainer);
+                    }
+                }
                 break;
         }
+    }
+
+    // Returns the replacement value, or null to leave the scalar untouched.
+    private static string? RedactScalar(string key, JsonValue value, bool inSecretContainer)
+    {
+        var keys = inSecretContainer ? ScopedSecretKeys : GlobalSecretKeys;
+
+        if (value.TryGetValue(out string? text) && text is not null)
+        {
+            var masked = RedactInlineSecrets(text);
+            if (!string.Equals(masked, text, StringComparison.Ordinal))
+                return masked; // inline secret(s) tokenized — non-secret parts preserved
+            return keys.Contains(key) ? RedactedValue : null;
+        }
+
+        return keys.Contains(key) ? RedactedValue : null;
+    }
+
+    private static string RedactInlineSecrets(string text)
+    {
+        var masked = UrlCredential.Replace(text, match => $"://{match.Groups[1].Value}:{RedactedValue}@");
+        return ConnectionStringSecret.Replace(masked, match => $"{match.Groups[1].Value}{match.Groups[2].Value}{RedactedValue}");
     }
 
     private Task<T> ExecuteServerCommand<T>(RavenCommand<T> command, CancellationToken cancellationToken)

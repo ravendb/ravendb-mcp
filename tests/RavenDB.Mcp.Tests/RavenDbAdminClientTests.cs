@@ -57,14 +57,18 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
             var record = await new RavenDbAdminClient(fixture.Store).GetDatabaseRecord(databaseName, timeout.Token);
             var raw = record.Record.GetRawText();
 
+            var connectionString = record.Record
+                .GetProperty("SqlConnectionStrings")
+                .GetProperty("reporting-sql")
+                .GetProperty("ConnectionString")
+                .GetString()!;
+
             Assert.DoesNotContain(secret, raw);
-            Assert.Equal(
-                "***redacted***",
-                record.Record
-                    .GetProperty("SqlConnectionStrings")
-                    .GetProperty("reporting-sql")
-                    .GetProperty("ConnectionString")
-                    .GetString());
+            // Hybrid redaction tokenizes the connection string: the secret is masked in place while the
+            // non-secret parts survive (so the agent still sees Server/User Id).
+            Assert.Contains("Server=db", connectionString);
+            Assert.Contains("Password=***redacted***", connectionString);
+            Assert.DoesNotContain(secret, connectionString);
         }
         finally
         {
