@@ -8,16 +8,6 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class IndexTools
 {
-    [McpServerTool(Name = "get_indexing_overview", ReadOnly = true)]
-    [Description("One-call indexing snapshot for a database: index summaries, stats, errors, indexing status, performance, progress, suggested merges, and total indexing time.")]
-    public static Task<GetIndexingOverviewResult> GetIndexingOverview(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetIndexingOverview(databaseName, cancellationToken);
-    }
-
     [McpServerTool(Name = "get_index", ReadOnly = true)]
     [Description("One index, multiple views. Sections: Definition (maps/reduce, fields, config, lock/deployment mode), Staleness (is it stale and why), Debug (internal debug view + metadata + history), Terms (distinct indexed terms for fieldName, paged), Errors (this index's indexing errors), Performance (this index's performance stats). Choose with include; default is Definition + Staleness. Terms requires fieldName. For an all-indexes view use get_database_stats with the indexing section.")]
     public static async Task<Dictionary<string, object?>> GetIndex(

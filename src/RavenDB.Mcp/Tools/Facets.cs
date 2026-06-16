@@ -55,6 +55,25 @@ public enum ResourceInclude
     ScriptRunners
 }
 
+/// <summary>Per-database statistics/state sections returned by <c>get_database_stats</c>.</summary>
+public enum DatabaseStatsInclude
+{
+    Summary,
+    Detailed,
+    Collections,
+    Indexing,
+    IndexErrors,
+    IndexPerformance,
+    Storage,
+    Tombstones,
+    Metrics,
+    Identities,
+    Revisions,
+    Sharding,
+    HugeDocuments,
+    Io
+}
+
 /// <summary>Database-scoped configuration sections returned by <c>get_database_config</c>.</summary>
 public enum DatabaseConfigSection
 {

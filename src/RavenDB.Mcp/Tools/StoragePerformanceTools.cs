@@ -8,16 +8,6 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class StoragePerformanceTools
 {
-    [McpServerTool(Name = "get_storage_overview", ReadOnly = true)]
-    [Description("Per-database storage report plus all-environments report: tree sizes, allocated vs used bytes, and per-environment breakdown.")]
-    public static Task<GetStorageOverviewResult> GetStorageOverview(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetStorageOverview(databaseName, cancellationToken);
-    }
-
     [McpServerTool(Name = "inspect_storage", ReadOnly = true)]
     [Description("Storage internals deep-dive for a database. Sections: Trees (Voron tree listing), Environment (one environment's report + scratch buffers + free space; defaults to the Documents environment — set environmentName/environmentType for Index/Configuration/System), CompressionDictionaries. Choose with include; default is Trees + Environment. For high-level sizes use get_database_stats with the storage section.")]
     public static async Task<Dictionary<string, object?>> InspectStorage(

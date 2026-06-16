@@ -92,16 +92,6 @@ public static class DiagnosticsExpansionTools
         return client.GetCollectionSampleShape(databaseName, collectionName, sampleSize, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_huge_documents_report", ReadOnly = true)]
-    [Description("Documents RavenDB flagged as unusually large for a database: ids and sizes. Use to find bloated documents.")]
-    public static Task<GetHugeDocumentsReportResult> GetHugeDocumentsReport(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetHugeDocumentsReport(databaseName, cancellationToken);
-    }
-
     [McpServerTool(Name = "scan_corrupted_document_ids", ReadOnly = true, UseStructuredContent = true)]
     [Description("Scan a database for corrupted document ids and write the result to a local artifact file. Returns the artifact path, content type, and byte size.")]
     public static Task<DiagnosticArtifactResult> ScanCorruptedDocumentIds(
@@ -146,16 +136,6 @@ public static class DiagnosticsExpansionTools
         CancellationToken cancellationToken)
     {
         return client.FindMissingAttachments(databaseName, collectionName, cancellationToken);
-    }
-
-    [McpServerTool(Name = "get_revisions_collection_stats", ReadOnly = true)]
-    [Description("Revision storage stats per collection for a database: how many revisions and how much space revisions consume.")]
-    public static Task<GetRevisionsCollectionStatsResult> GetRevisionsCollectionStats(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetRevisionsCollectionStats(databaseName, cancellationToken);
     }
 
     [McpServerTool(Name = "query_metadata_only", ReadOnly = true)]

@@ -27,24 +27,34 @@ public static class DatabaseTools
         return client.GetDatabaseRecord(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_collection_overview", ReadOnly = true)]
-    [Description("Collection statistics for a database: per-collection document counts plus detailed size/document totals.")]
-    public static Task<GetCollectionOverviewResult> GetCollectionOverview(
+    [McpServerTool(Name = "get_database_stats", ReadOnly = true)]
+    [Description("Per-database statistics and state. Sections: Summary, Detailed, Collections, Indexing, IndexErrors, IndexPerformance, Storage, Tombstones, Metrics, Identities, Revisions, Sharding, HugeDocuments, Io. Choose with include; default is Summary + Collections + Indexing. Tombstones/Metrics/Sharding are availability-wrapped (e.g. Sharding only on sharded databases).")]
+    public static async Task<Dictionary<string, object?>> GetDatabaseStats(
         RavenDbAdminClient client,
-        string databaseName,
+        [Description("Database to read.")] string databaseName,
+        [Description("Sections to return; omit for Summary + Collections + Indexing.")] DatabaseStatsInclude[]? include,
         CancellationToken cancellationToken)
     {
-        return client.GetCollectionOverview(databaseName, cancellationToken);
-    }
+        var sections = Facet.Resolve(include,
+            DatabaseStatsInclude.Summary, DatabaseStatsInclude.Collections, DatabaseStatsInclude.Indexing);
+        var result = new Dictionary<string, object?>();
 
-    [McpServerTool(Name = "get_database_overview", ReadOnly = true)]
-    [Description("One-call health snapshot for a database: stats, detailed stats, indexing status, index stats, index errors, and ongoing tasks.")]
-    public static Task<GetDatabaseOverviewResult> GetDatabaseOverview(
-        RavenDbAdminClient client,
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        return client.GetDatabaseOverview(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Summary)) result["summary"] = await client.GetDatabaseStats(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Detailed)) result["detailed"] = await client.GetDetailedDatabaseStats(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Collections)) result["collections"] = await client.GetCollectionOverview(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Indexing)) result["indexing"] = await client.GetIndexingOverview(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.IndexErrors)) result["indexErrors"] = await client.GetIndexErrors(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.IndexPerformance)) result["indexPerformance"] = await client.GetIndexPerformance(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Storage)) result["storage"] = await client.GetStorageOverview(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Tombstones)) result["tombstones"] = await client.GetTombstonesState(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Metrics)) result["metrics"] = await client.GetDatabaseMetrics(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Identities)) result["identities"] = await client.GetIdentities(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Revisions)) result["revisions"] = await client.GetRevisionsCollectionStats(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Sharding)) result["sharding"] = await client.GetShardingState(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.HugeDocuments)) result["hugeDocuments"] = await client.GetHugeDocumentsReport(databaseName, cancellationToken);
+        if (sections.Contains(DatabaseStatsInclude.Io)) result["io"] = await client.GetIoStats(databaseName, cancellationToken);
+
+        return result;
     }
 
     // Feature toggles/policies live in the database record; one fetch covers all of them.

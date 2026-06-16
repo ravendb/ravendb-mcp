@@ -122,4 +122,24 @@ public sealed partial class RavenDbAdminClient
         ValidateDatabaseName(databaseName);
         return GetDatabaseJson(databaseName, "/configuration/studio", cancellationToken);
     }
+
+    // No typed Client-API operation; availability-wrapped because these vary by version/topology
+    // (sharding only exists on sharded databases).
+    public Task<JsonElement> GetTombstonesState(string databaseName, CancellationToken cancellationToken)
+    {
+        ValidateDatabaseName(databaseName);
+        return TryGetDatabaseJson(databaseName, "/admin/tombstones/state", cancellationToken);
+    }
+
+    public Task<JsonElement> GetDatabaseMetrics(string databaseName, CancellationToken cancellationToken)
+    {
+        ValidateDatabaseName(databaseName);
+        return TryGetDatabaseJson(databaseName, "/metrics", cancellationToken);
+    }
+
+    public Task<JsonElement> GetShardingState(string databaseName, CancellationToken cancellationToken)
+    {
+        ValidateDatabaseName(databaseName);
+        return TryGetDatabaseJson(databaseName, "/debug/sharding/buckets", cancellationToken);
+    }
 }
