@@ -85,7 +85,7 @@ public static class StoragePerformanceTools
     }
 }
 
-public sealed record GetStorageOverviewResult(string DatabaseName, JsonElement Report, JsonElement Environments);
+public sealed record GetStorageOverviewResult(string DatabaseName, JsonElement Report);
 
 public sealed record GetStorageTreesResult(string DatabaseName, JsonElement Trees);
 

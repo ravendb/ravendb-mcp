@@ -4,14 +4,15 @@ namespace RavenDB.Mcp.RavenDB;
 
 public sealed partial class RavenDbAdminClient
 {
+    // High-level per-environment sizes for every environment. The per-table/per-tree deep report is
+    // an order of magnitude larger; get it one environment at a time via inspect_storage.
     public async Task<GetStorageOverviewResult> GetStorageOverview(
         string databaseName,
         CancellationToken cancellationToken)
     {
         return new GetStorageOverviewResult(
             databaseName,
-            await GetDatabaseJson(databaseName, "/debug/storage/report", cancellationToken),
-            await GetDatabaseJson(databaseName, "/debug/storage/all-environments/report", cancellationToken));
+            await GetDatabaseJson(databaseName, "/debug/storage/report", cancellationToken));
     }
 
     public async Task<GetStorageTreesResult> GetStorageTrees(

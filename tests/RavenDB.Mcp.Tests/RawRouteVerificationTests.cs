@@ -90,7 +90,6 @@ public sealed class RawRouteVerificationTests(RavenDbTestFixture fixture)
         "/subscriptions/state",
         "/subscriptions/connection-details",
         "/debug/storage/report",
-        "/debug/storage/all-environments/report",
         "/debug/storage/trees",
         "/debug/storage/environment/report",
         "/debug/storage/fst-structure",
