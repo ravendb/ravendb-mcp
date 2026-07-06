@@ -115,6 +115,7 @@ public sealed partial class RavenDbAdminClient
         string query,
         int? start,
         int? pageSize,
+        JsonElement? parameters,
         CancellationToken cancellationToken)
     {
         ValidateName(query, "Query", nameof(query));
@@ -122,19 +123,19 @@ public sealed partial class RavenDbAdminClient
         if (MutatingQuery.IsMatch(query))
             throw new ArgumentException("run_query is read-only; UPDATE/patch queries are not allowed.", nameof(query));
 
+        var body = new Dictionary<string, object?>
+        {
+            ["Query"] = query,
+            ["Start"] = Math.Max(start ?? 0, 0),
+            ["PageSize"] = Math.Clamp(pageSize ?? 25, 1, 128),
+        };
+        if (parameters is { ValueKind: JsonValueKind.Object } queryParameters)
+            body["QueryParameters"] = queryParameters;
+
         JsonElement result;
         try
         {
-            result = await PostDatabaseJson(
-                databaseName,
-                "/queries",
-                new
-                {
-                    Query = query,
-                    Start = Math.Max(start ?? 0, 0),
-                    PageSize = Math.Clamp(pageSize ?? 25, 1, 128)
-                },
-                cancellationToken);
+            result = await PostDatabaseJson(databaseName, "/queries", body, cancellationToken);
         }
         catch (RavenRequestException e) when (TryQueryError(e.ResponseText, out var queryError))
         {

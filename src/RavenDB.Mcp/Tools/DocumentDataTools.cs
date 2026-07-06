@@ -63,9 +63,10 @@ public static class DocumentDataTools
         [Description("RQL query, e.g. 'from Users where Age > 30'. Read-only; UPDATE/patch is rejected.")] string query,
         [Description("Zero-based offset of the first row to return (default 0).")] int? start = null,
         [Description("Max rows to return, 1-128 (default 25).")] int? pageSize = null,
+        [Description("Values for $params as a JSON object, e.g. {\"stage\":\"Closed Won\"} for `where Stage = $stage`. Prefer this over inlining literals.")] JsonElement? parameters = null,
         CancellationToken cancellationToken = default)
     {
-        return client.RunQuery(databaseName, query, start, pageSize, cancellationToken);
+        return client.RunQuery(databaseName, query, start, pageSize, parameters, cancellationToken);
     }
 
     [McpServerTool(Name = "list_compare_exchange", ReadOnly = true)]
