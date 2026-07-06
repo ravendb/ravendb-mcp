@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations.CompareExchange;
@@ -116,6 +117,7 @@ public sealed partial class RavenDbAdminClient
         int? start,
         int? pageSize,
         JsonElement? parameters,
+        bool includeMetadata,
         CancellationToken cancellationToken)
     {
         ValidateName(query, "Query", nameof(query));
@@ -140,10 +142,43 @@ public sealed partial class RavenDbAdminClient
         catch (RavenRequestException e) when (TryQueryError(e.ResponseText, out var queryError))
         {
             // Malformed RQL — hand the parser/validation message back so the caller can fix it.
-            result = queryError;
+            return new RunQueryResult(databaseName, query, queryError);
         }
 
-        return new RunQueryResult(databaseName, query, result);
+        return new RunQueryResult(databaseName, query,
+            includeMetadata ? result : SlimMetadata(result));
+    }
+
+    private static readonly string[] KeptMetadata = ["@id", "@collection"];
+
+    // Reduce each row/include's @metadata to identity only (@id, @collection); drops change-vector, flags,
+    // timestamps, CLR type, scores. Keeps results referenceable while cutting the bulk of a result set.
+    private static JsonElement SlimMetadata(JsonElement result)
+    {
+        var root = JsonNode.Parse(result.GetRawText());
+
+        static void Slim(JsonNode? doc)
+        {
+            if (doc is not JsonObject o || o["@metadata"] is not JsonObject meta)
+                return;
+            var kept = new JsonObject();
+            foreach (var key in KeptMetadata)
+                if (meta[key] is { } value)
+                    kept[key] = value.DeepClone();
+            if (kept.Count > 0)
+                o["@metadata"] = kept;
+            else
+                o.Remove("@metadata");
+        }
+
+        if (root?["Results"] is JsonArray rows)
+            foreach (var row in rows)
+                Slim(row);
+        if (root?["Includes"] is JsonObject includes)
+            foreach (var include in includes)
+                Slim(include.Value);
+
+        return JsonSerializer.SerializeToElement(root);
     }
 
     // RavenDB reports a bad query as a 500 whose body Type is a query parse/validation exception; a genuine
