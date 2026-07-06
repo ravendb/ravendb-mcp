@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Raven.Client.Documents.Operations;
 using Raven.Client.Documents.Operations.Configuration;
 using Raven.Client.ServerWide.Operations;
@@ -22,9 +23,34 @@ public sealed partial class RavenDbAdminClient
         string databaseName,
         CancellationToken cancellationToken)
     {
-        return new GetDatabaseRecordResult(
-            databaseName,
-            await GetDatabaseRecordJson(databaseName, cancellationToken));
+        var record = await GetDatabaseRecordJson(databaseName, cancellationToken);
+        return new GetDatabaseRecordResult(databaseName, SummarizeRecordIndexes(record));
+    }
+
+    private static readonly string[] IndexCollections = ["Indexes", "AutoIndexes", "IndexesHistory"];
+
+    // Full index definitions/history dominate the record (~90%+) and duplicate get_index; reduce them to
+    // name+count so the record stays readable. Use get_index for one index's definition, staleness, or history.
+    private static JsonElement SummarizeRecordIndexes(JsonElement record)
+    {
+        var root = JsonNode.Parse(record.GetRawText())!.AsObject();
+        var summarized = false;
+
+        foreach (var key in IndexCollections)
+        {
+            if (root[key] is not JsonObject entries || entries.Count == 0)
+                continue;
+            var names = new JsonArray();
+            foreach (var entry in entries)
+                names.Add(entry.Key);
+            root[key] = new JsonObject { ["Count"] = entries.Count, ["Names"] = names };
+            summarized = true;
+        }
+
+        if (summarized)
+            root["IndexesHint"] = "Index definitions/history reduced to names; use get_index for one index's full definition, staleness, errors, or history.";
+
+        return JsonSerializer.SerializeToElement(root);
     }
 
     public async Task<GetDatabaseStatsResult> GetDatabaseStats(string databaseName, CancellationToken cancellationToken)

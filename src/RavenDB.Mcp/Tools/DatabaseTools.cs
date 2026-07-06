@@ -18,7 +18,7 @@ public static class DatabaseTools
     }
 
     [McpServerTool(Name = "get_database_record", ReadOnly = true)]
-    [Description("Full database record: topology, ongoing tasks (backup/replication/ETL/subscriptions), settings, and feature configuration.")]
+    [Description("Database record: topology, ongoing tasks (backup/replication/ETL/subscriptions), settings, and feature configuration. Index definitions and history are reduced to name+count (they dominate the raw record) — use get_index for one index's full definition/staleness/history.")]
     public static Task<GetDatabaseRecordResult> GetDatabaseRecord(
         RavenDbAdminClient client,
         string databaseName,
