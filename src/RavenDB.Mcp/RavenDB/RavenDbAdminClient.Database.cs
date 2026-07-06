@@ -109,7 +109,7 @@ public sealed partial class RavenDbAdminClient
             new GetDatabaseSettingsOperation(databaseName),
             token: cancellationToken);
 
-        return new GetDatabaseConfigurationResult(databaseName, ToJson(configuration));
+        return new GetDatabaseConfigurationResult(databaseName, RedactSecrets(ToJson(configuration)));
     }
 
     public async Task<GetClientConfigurationResult> GetClientConfiguration(string databaseName, CancellationToken cancellationToken)

@@ -5,12 +5,13 @@ namespace RavenDB.Mcp.RavenDB;
 
 public sealed partial class RavenDbAdminClient
 {
-    public Task<JsonElement> GetAiAgents(string databaseName, string? name, CancellationToken cancellationToken)
+    // AI agent configs can carry inline model credentials; redact defensively (this endpoint bypasses the record path).
+    public async Task<JsonElement> GetAiAgents(string databaseName, string? name, CancellationToken cancellationToken)
     {
         ValidateDatabaseName(databaseName);
         var operation = string.IsNullOrWhiteSpace(name)
             ? new GetAiAgentsOperation()
             : new GetAiAgentsOperation(name);
-        return TryReadJson(() => ForDatabase(databaseName).SendAsync(operation, cancellationToken), cancellationToken);
+        return RedactSecrets(await TryReadJson(() => ForDatabase(databaseName).SendAsync(operation, cancellationToken), cancellationToken));
     }
 }

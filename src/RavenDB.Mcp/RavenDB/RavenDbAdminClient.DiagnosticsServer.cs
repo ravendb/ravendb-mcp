@@ -29,7 +29,7 @@ public sealed partial class RavenDbAdminClient
     // key prefixes with counts; a prefix returns the matching settings entries.
     public async Task<JsonElement> GetServerSettings(string? keyPrefix, CancellationToken cancellationToken)
     {
-        var settings = await TryGetServerJson("/admin/configuration/settings", cancellationToken);
+        var settings = RedactSecrets(await TryGetServerJson("/admin/configuration/settings", cancellationToken));
         if (settings.ValueKind != JsonValueKind.Object)
             return settings;
 

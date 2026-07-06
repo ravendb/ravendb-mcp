@@ -129,7 +129,7 @@ public sealed partial class RavenDbAdminClient
             databaseName,
             taskId,
             taskType.ToString(),
-            ToJson(task));
+            RedactSecrets(ToJson(task)));
     }
 
     public async Task<GetSubscriptionsResult> GetSubscriptions(
