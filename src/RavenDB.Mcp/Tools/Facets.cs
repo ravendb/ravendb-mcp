@@ -214,8 +214,14 @@ public enum ClusterInclude
     /// <summary>Build/version and the contacted node's info.</summary>
     ServerInfo,
 
-    /// <summary>Server-level diagnostics (routes, settings, metrics, license, idle DBs, ...).</summary>
+    /// <summary>Light server-level diagnostics (metrics, cpu-credits, idle DBs, license, cluster maintenance).</summary>
     ServerDiagnostics,
+
+    /// <summary>Full server configuration key/value dump — large; request on its own.</summary>
+    ServerSettings,
+
+    /// <summary>All registered HTTP routes — large; request on its own.</summary>
+    ServerRoutes,
 
     /// <summary>Cluster-level diagnostics (observer decisions, cluster log, engine logs, ...).</summary>
     ClusterDiagnostics

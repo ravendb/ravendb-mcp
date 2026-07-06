@@ -9,24 +9,28 @@ public sealed partial class RavenDbAdminClient
 {
     public async Task<GetServerDiagnosticsOverviewResult> GetServerDiagnosticsOverview(CancellationToken cancellationToken)
     {
-        var routesTask = TryGetServerJson("/debug/routes", cancellationToken);
-        var settingsTask = TryGetServerJson("/admin/configuration/settings", cancellationToken);
         var metricsTask = TryGetServerJson("/admin/metrics", cancellationToken);
         var cpuCreditsTask = TryGetServerJson("/debug/cpu-credits", cancellationToken);
         var idleTask = TryGetServerJson("/admin/debug/databases/idle", cancellationToken);
         var licenseTask = TryGetServerJson("/license-server/connectivity", cancellationToken);
         var maintenanceTask = TryGetServerJson("/admin/cluster/maintenance-stats", cancellationToken);
-        await Task.WhenAll(routesTask, settingsTask, metricsTask, cpuCreditsTask, idleTask, licenseTask, maintenanceTask);
+        await Task.WhenAll(metricsTask, cpuCreditsTask, idleTask, licenseTask, maintenanceTask);
 
         return new GetServerDiagnosticsOverviewResult(
-            await routesTask,
-            await settingsTask,
             await metricsTask,
             await cpuCreditsTask,
             await idleTask,
             await licenseTask,
             await maintenanceTask);
     }
+
+    // Full server configuration dump; large, hence its own facet.
+    public Task<JsonElement> GetServerSettings(CancellationToken cancellationToken) =>
+        TryGetServerJson("/admin/configuration/settings", cancellationToken);
+
+    // All registered HTTP routes; large, hence its own facet.
+    public Task<JsonElement> GetServerRoutes(CancellationToken cancellationToken) =>
+        TryGetServerJson("/debug/routes", cancellationToken);
 
     public async Task<GetClusterDiagnosticsOverviewResult> GetClusterDiagnosticsOverview(CancellationToken cancellationToken)
     {

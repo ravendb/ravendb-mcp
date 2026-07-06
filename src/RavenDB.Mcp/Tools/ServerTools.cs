@@ -9,7 +9,7 @@ namespace RavenDB.Mcp.Tools;
 public static class ServerTools
 {
     [McpServerTool(Name = "get_cluster_overview", ReadOnly = true)]
-    [Description("Cluster and server overview. Sections: Nodes (topology, leader, per-node tag/type/url/health), ServerInfo (build/version + contacted node), ServerDiagnostics (routes/settings/metrics/license/idle DBs), ClusterDiagnostics (observer decisions, cluster log, engine logs). Choose with include; default is Nodes + ServerInfo. For alerts/hints use get_notifications.")]
+    [Description("Cluster and server overview. Sections: Nodes (topology, leader, per-node tag/type/url/health), ServerInfo (build/version + contacted node), ServerDiagnostics (light: metrics/cpu-credits/idle DBs/license/cluster maintenance), ServerSettings (full config dump — large), ServerRoutes (all HTTP routes — large), ClusterDiagnostics (observer decisions, cluster log, engine logs). Choose with include; default is Nodes + ServerInfo. Request ServerSettings/ServerRoutes on their own. For alerts/hints use get_notifications.")]
     public static async Task<Dictionary<string, object?>> GetClusterOverview(
         RavenDbAdminClient client,
         [Description("Sections to return; omit for Nodes + ServerInfo.")] ClusterInclude[]? include = null,
@@ -21,6 +21,8 @@ public static class ServerTools
         if (sections.Contains(ClusterInclude.Nodes)) result["nodes"] = await client.GetClusterNodes(cancellationToken);
         if (sections.Contains(ClusterInclude.ServerInfo)) result["serverInfo"] = await client.GetServerInfo(cancellationToken);
         if (sections.Contains(ClusterInclude.ServerDiagnostics)) result["serverDiagnostics"] = await client.GetServerDiagnosticsOverview(cancellationToken);
+        if (sections.Contains(ClusterInclude.ServerSettings)) result["serverSettings"] = await client.GetServerSettings(cancellationToken);
+        if (sections.Contains(ClusterInclude.ServerRoutes)) result["serverRoutes"] = await client.GetServerRoutes(cancellationToken);
         if (sections.Contains(ClusterInclude.ClusterDiagnostics)) result["clusterDiagnostics"] = await client.GetClusterDiagnosticsOverview(cancellationToken);
 
         return result;
