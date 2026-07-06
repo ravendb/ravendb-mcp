@@ -9,12 +9,13 @@ namespace RavenDB.Mcp.Tools;
 public static class DiagnosticsExpansionTools
 {
     [McpServerTool(Name = "sample_live_feed", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Pull a live server feed for a few seconds and return what streamed in. feed selects the source: AdminLogs (operational logs), ClusterDashboard (throughput/requests/indexing/storage), TrafficWatch (HTTP/TCP requests as they happen — optional databaseName filter), GcEvents, Allocations, ThreadContention, or ThreadRunaway (a one-shot snapshot, ignores seconds). seconds is the capture window, 1-30. Returns the captured text with Truncated/Limit flags when capped.")]
+    [Description("Pull a live server feed for a few seconds and return what streamed in. feed selects the source: AdminLogs (operational logs), ClusterDashboard (throughput/requests/indexing/storage), TrafficWatch (HTTP/TCP requests as they happen — optional databaseName filter), GcEvents, Allocations, ThreadContention, or ThreadRunaway (a one-shot snapshot, ignores seconds). seconds is the capture window, 1-30. ThreadRunaway returns the top-5 threads by CPU in full plus a compact index of all threads; pass threadNamePrefix for full detail on specific threads. Returns the captured text with Truncated/Limit flags when capped.")]
     public static Task<DiagnosticTextSampleResult> SampleLiveFeed(
         RavenDbAdminClient client,
         [Description("Which live feed to pull.")] FeedKind feed,
         [Description("Capture window in seconds, 1-30 (ignored for ThreadRunaway).")] int seconds,
         [Description("For TrafficWatch: optionally scope the capture to one database.")] string? databaseName = null,
+        [Description("For ThreadRunaway: return full per-thread detail for threads whose name starts with this prefix; omit for the top-5-by-CPU summary + compact all-threads index.")] string? threadNamePrefix = null,
         CancellationToken cancellationToken = default)
     {
         return feed switch
@@ -25,7 +26,7 @@ public static class DiagnosticsExpansionTools
             FeedKind.GcEvents => client.SampleGcEvents(seconds, cancellationToken),
             FeedKind.Allocations => client.SampleAllocations(seconds, cancellationToken),
             FeedKind.ThreadContention => client.SampleThreadContention(seconds, cancellationToken),
-            FeedKind.ThreadRunaway => client.SampleThreadRunaway(cancellationToken),
+            FeedKind.ThreadRunaway => client.SampleThreadRunaway(threadNamePrefix, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(feed))
         };
     }

@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using RavenDB.Mcp.Tools;
 
 namespace RavenDB.Mcp.RavenDB;
@@ -186,10 +188,65 @@ public sealed partial class RavenDbAdminClient
     public Task<DiagnosticTextSampleResult> SampleThreadContention(int seconds, CancellationToken cancellationToken)
         => SampleServerTextFeed("thread_contention", "/admin/debug/threads/contention", seconds, cancellationToken);
 
-    public async Task<DiagnosticTextSampleResult> SampleThreadRunaway(CancellationToken cancellationToken)
+    private const int RunawayTopThreads = 5;
+
+    public async Task<DiagnosticTextSampleResult> SampleThreadRunaway(string? namePrefix, CancellationToken cancellationToken)
     {
-        var sample = TruncateSample(await GetServerText("/admin/debug/threads/runaway", cancellationToken));
+        var text = SummarizeRunawayThreads(await GetServerText("/admin/debug/threads/runaway", cancellationToken), namePrefix);
+        var sample = TruncateSample(text);
         return new("thread_runaway", 0, sample.Text, sample.Truncated, sample.Limit);
+    }
+
+    // The raw snapshot lists every thread with a fat per-thread IoStats block. Default: the hottest few in full
+    // plus a compact index of all threads (Id/Name/CpuUsage) so the caller can pick a name prefix; with a prefix:
+    // full detail for matching threads. Threads sorted by CPU descending.
+    private static string SummarizeRunawayThreads(string json, string? namePrefix)
+    {
+        JsonNode? root;
+        try { root = JsonNode.Parse(json); }
+        catch (JsonException) { return json; }
+
+        if (root?["Runaway Threads"] is not JsonObject runaway || runaway["List"] is not JsonArray list)
+            return json;
+
+        var sorted = list.OfType<JsonObject>()
+            .OrderByDescending(t => t["CpuUsage"]?.GetValue<double>() ?? 0)
+            .ToArray();
+
+        var result = new JsonObject();
+        if (root["@metadata"] is { } meta) result["@metadata"] = meta.DeepClone();
+        foreach (var field in runaway)
+            if (field.Key != "List")
+                result[field.Key] = field.Value?.DeepClone();
+
+        if (string.IsNullOrWhiteSpace(namePrefix))
+        {
+            var top = new JsonArray();
+            foreach (var t in sorted.Take(RunawayTopThreads))
+                top.Add(t.DeepClone());
+            var all = new JsonArray();
+            foreach (var t in sorted)
+                all.Add(new JsonObject
+                {
+                    ["Id"] = t["Id"]?.DeepClone(),
+                    ["Name"] = t["Name"]?.DeepClone(),
+                    ["CpuUsage"] = t["CpuUsage"]?.DeepClone(),
+                });
+            result["TopByCpu"] = top;
+            result["AllThreads"] = all;
+            result["Hint"] = $"Top {RunawayTopThreads} threads by CPU in full; AllThreads lists every thread compactly. Pass threadNamePrefix for full detail on threads whose name starts with the prefix.";
+        }
+        else
+        {
+            var matching = new JsonArray();
+            foreach (var t in sorted)
+                if ((t["Name"]?.GetValue<string>() ?? "").StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
+                    matching.Add(t.DeepClone());
+            result["MatchingThreads"] = matching;
+            result["MatchCount"] = matching.Count;
+        }
+
+        return result.ToJsonString();
     }
 
     public async Task<GetStackTracesResult> GetStackTraces(CancellationToken cancellationToken)
