@@ -33,15 +33,6 @@ public sealed partial class RavenDbAdminClient
         return new GetIndexErrorsResult(databaseName, ToJson(errors));
     }
 
-    public async Task<GetIndexPerformanceResult> GetIndexPerformance(string databaseName, CancellationToken cancellationToken)
-    {
-        var performance = await ForDatabase(databaseName).SendAsync(
-            new GetIndexPerformanceStatisticsOperation(),
-            token: cancellationToken);
-
-        return new GetIndexPerformanceResult(databaseName, ToJson(performance));
-    }
-
     public async Task<GetIndexErrorsResult> GetIndexErrors(string databaseName, string indexName, CancellationToken cancellationToken)
     {
         ValidateName(indexName, "Index name", nameof(indexName));
@@ -81,11 +72,10 @@ public sealed partial class RavenDbAdminClient
         var statsTask = GetIndexStats(databaseName, cancellationToken);
         var errorsTask = GetIndexErrors(databaseName, cancellationToken);
         var statusTask = GetIndexingStatus(databaseName, cancellationToken);
-        var performanceTask = GetIndexPerformance(databaseName, cancellationToken);
         var progressTask = TryGetDatabaseJson(databaseName, "/indexes/progress", cancellationToken);
         var mergeTask = TryGetDatabaseJson(databaseName, "/indexes/suggest-index-merge", cancellationToken);
         var totalTimeTask = TryGetDatabaseJson(databaseName, "/indexes/total-time", cancellationToken);
-        await Task.WhenAll(indexesTask, statsTask, errorsTask, statusTask, performanceTask, progressTask, mergeTask, totalTimeTask);
+        await Task.WhenAll(indexesTask, statsTask, errorsTask, statusTask, progressTask, mergeTask, totalTimeTask);
 
         return new GetIndexingOverviewResult(
             databaseName,
@@ -93,7 +83,6 @@ public sealed partial class RavenDbAdminClient
             (await statsTask).Stats,
             (await errorsTask).Errors,
             (await statusTask).Status,
-            (await performanceTask).Performance,
             await progressTask,
             await mergeTask,
             await totalTimeTask);

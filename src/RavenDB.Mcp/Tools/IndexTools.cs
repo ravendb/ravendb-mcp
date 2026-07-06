@@ -56,7 +56,6 @@ public sealed record GetIndexingOverviewResult(
     JsonElement Stats,
     JsonElement Errors,
     JsonElement Status,
-    JsonElement Performance,
     JsonElement Progress,
     JsonElement SuggestedMerges,
     JsonElement TotalTime);

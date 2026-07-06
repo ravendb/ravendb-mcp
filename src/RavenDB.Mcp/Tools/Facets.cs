@@ -88,7 +88,6 @@ public enum DatabaseStatsInclude
     Collections,
     Indexing,
     IndexErrors,
-    IndexPerformance,
     Storage,
     Tombstones,
     Metrics,

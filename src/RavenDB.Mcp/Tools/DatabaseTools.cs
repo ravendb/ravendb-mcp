@@ -28,7 +28,7 @@ public static class DatabaseTools
     }
 
     [McpServerTool(Name = "get_database_stats", ReadOnly = true)]
-    [Description("Per-database statistics and state. Sections: Summary, Detailed, Collections, Indexing, IndexErrors, IndexPerformance, Storage, Tombstones, Metrics, Identities, Revisions, Sharding, HugeDocuments, Io. Choose with include; default is Summary + Collections + Indexing. Tombstones/Metrics/Sharding are availability-wrapped (e.g. Sharding only on sharded databases).")]
+    [Description("Per-database statistics and state. Sections: Summary, Detailed, Collections, Indexing, IndexErrors, Storage, Tombstones, Metrics, Identities, Revisions, Sharding, HugeDocuments, Io. Choose with include; default is Summary + Collections + Indexing. For one index's deep performance/debug use get_index; for one storage environment's deep report use inspect_storage. Tombstones/Metrics/Sharding are availability-wrapped (e.g. Sharding only on sharded databases).")]
     public static async Task<Dictionary<string, object?>> GetDatabaseStats(
         RavenDbAdminClient client,
         [Description("Database to read.")] string databaseName,
@@ -54,7 +54,6 @@ public static class DatabaseTools
         (DatabaseStatsInclude.Collections,      "collections",      async (c, db, ct) => await c.GetCollectionOverview(db, ct)),
         (DatabaseStatsInclude.Indexing,         "indexing",         async (c, db, ct) => await c.GetIndexingOverview(db, ct)),
         (DatabaseStatsInclude.IndexErrors,      "indexErrors",      async (c, db, ct) => await c.GetIndexErrors(db, ct)),
-        (DatabaseStatsInclude.IndexPerformance, "indexPerformance", async (c, db, ct) => await c.GetIndexPerformance(db, ct)),
         (DatabaseStatsInclude.Storage,          "storage",          async (c, db, ct) => await c.GetStorageOverview(db, ct)),
         (DatabaseStatsInclude.Tombstones,       "tombstones",       async (c, db, ct) => await c.GetTombstonesState(db, ct)),
         (DatabaseStatsInclude.Metrics,          "metrics",          async (c, db, ct) => await c.GetDatabaseMetrics(db, ct)),
