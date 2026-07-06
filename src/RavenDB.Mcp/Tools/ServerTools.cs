@@ -9,7 +9,7 @@ namespace RavenDB.Mcp.Tools;
 public static class ServerTools
 {
     [McpServerTool(Name = "get_cluster_overview", ReadOnly = true)]
-    [Description("Cluster and server overview. Sections: Nodes (topology, leader, per-node tag/type/url/health), ServerInfo (build/version + contacted node), ServerDiagnostics (light: metrics/cpu-credits/idle DBs/license/cluster maintenance), ServerSettings (config dump — large; narrow with settingsPrefix), ServerRoutes (all HTTP routes — large), ClusterDiagnostics (light: observer decisions, remote connections, engine logs, state changes), ClusterLog (raft log — large), ClusterHistory (cluster history — large). Choose with include; default is Nodes + ServerInfo. Request the large sections on their own. For alerts/hints use get_notifications.")]
+    [Description("Cluster and server overview. Sections: Nodes (topology, leader, per-node tag/type/url/health), ServerInfo (build/version + contacted node), ServerDiagnostics (light: metrics/cpu-credits/idle DBs/license/cluster maintenance), ServerSettings (no settingsPrefix → index of available prefixes+counts; with settingsPrefix → that prefix's settings), ServerRoutes (all HTTP routes — large), ClusterDiagnostics (light: observer decisions, remote connections, engine logs, state changes), ClusterLog (raft log — large), ClusterHistory (cluster history — large). Choose with include; default is Nodes + ServerInfo. Request the large sections on their own. For alerts/hints use get_notifications.")]
     public static async Task<Dictionary<string, object?>> GetClusterOverview(
         RavenDbAdminClient client,
         [Description("Sections to return; omit for Nodes + ServerInfo.")] ClusterInclude[]? include = null,

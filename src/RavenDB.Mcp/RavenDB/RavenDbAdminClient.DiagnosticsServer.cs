@@ -25,31 +25,45 @@ public sealed partial class RavenDbAdminClient
             await maintenanceTask);
     }
 
-    // Full server configuration dump; large, hence its own facet. An optional key prefix narrows the
-    // Settings list to matching configuration keys (e.g. "Indexing").
+    // The full config dump is ~200KB, so this is progressive: no prefix returns the index of available
+    // key prefixes with counts; a prefix returns the matching settings entries.
     public async Task<JsonElement> GetServerSettings(string? keyPrefix, CancellationToken cancellationToken)
     {
         var settings = await TryGetServerJson("/admin/configuration/settings", cancellationToken);
-        if (string.IsNullOrWhiteSpace(keyPrefix) || settings.ValueKind != JsonValueKind.Object)
+        if (settings.ValueKind != JsonValueKind.Object)
             return settings;
 
         var root = JsonNode.Parse(settings.GetRawText())!;
         var container = root["value"] as JsonObject ?? root.AsObject();
-        if (container["Settings"] is JsonArray entries)
+        if (container["Settings"] is not JsonArray entries)
+            return settings;
+
+        static IEnumerable<string> KeysOf(JsonNode? entry) =>
+            (entry?["Metadata"]?["Keys"] as JsonArray ?? []).Select(k => k!.GetValue<string>());
+
+        if (string.IsNullOrWhiteSpace(keyPrefix))
         {
-            var kept = new JsonArray();
-            foreach (var entry in entries.ToArray())
+            var prefixes = new SortedDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in entries.SelectMany(KeysOf))
+                prefixes[key.Split('.', 2)[0]] = prefixes.GetValueOrDefault(key.Split('.', 2)[0]) + 1;
+
+            return ToJson(new
             {
-                var keys = entry?["Metadata"]?["Keys"] as JsonArray;
-                if (keys is not null && keys.Any(k =>
-                        k?.GetValue<string>().StartsWith(keyPrefix, StringComparison.OrdinalIgnoreCase) == true))
-                {
-                    entries.Remove(entry);
-                    kept.Add(entry);
-                }
-            }
-            container["Settings"] = kept;
+                available = true,
+                totalEntries = entries.Count,
+                prefixes,
+                hint = "Pass settingsPrefix (e.g. 'Indexing') to fetch the settings under a prefix.",
+            });
         }
+
+        var kept = new JsonArray();
+        foreach (var entry in entries.ToArray())
+            if (KeysOf(entry).Any(k => k.StartsWith(keyPrefix, StringComparison.OrdinalIgnoreCase)))
+            {
+                entries.Remove(entry);
+                kept.Add(entry);
+            }
+        container["Settings"] = kept;
         return JsonSerializer.SerializeToElement(root);
     }
 
