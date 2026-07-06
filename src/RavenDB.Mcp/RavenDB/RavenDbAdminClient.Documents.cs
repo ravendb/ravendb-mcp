@@ -164,7 +164,11 @@ public sealed partial class RavenDbAdminClient
             var message = body.TryGetProperty("Message", out var m) && m.ValueKind == JsonValueKind.String
                 ? m.GetString()!
                 : responseText;
-            error = JsonSerializer.SerializeToElement(new { Error = message });
+            error = JsonSerializer.SerializeToElement(new
+            {
+                Error = message,
+                Hint = "Don't retry from memory — read rql://cheatsheet for clause order/syntax, or rql://index to find the right feature resource."
+            });
             return true;
         }
         catch (JsonException)
