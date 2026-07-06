@@ -11,7 +11,7 @@ namespace RavenDB.Mcp.Tools;
 public static class TaskTools
 {
     [McpServerTool(Name = "get_tasks", ReadOnly = true)]
-    [Description("Ongoing tasks for a database. Default (no taskId/subscriptionName/diagnostics) lists all tasks: backups, ETL, replication, subscriptions. Provide taskId (+taskType) for one task's runtime info; subscriptionName for a subscription's processing state; set includeDiagnostics (+taskType) for deep diagnostics of that family (Backup / *Etl / Subscription / Replication).")]
+    [Description("Ongoing tasks for a database. Default (no taskId/subscriptionName/diagnostics) lists all tasks: backups, ETL, replication, subscriptions. Provide taskId (+taskType) for one task's runtime info; subscriptionName for a subscription's processing state; set includeDiagnostics (+taskType) for deep diagnostics of that family (Backup / *Etl / Subscription / Replication). The diagnostics bundle omits rolling performance history (and replication conflicts) by default — set includePerformance to include those large axes.")]
     public static async Task<Dictionary<string, object?>> GetTasks(
         RavenDbAdminClient client,
         [Description("Database to read tasks for.")] string databaseName,
@@ -19,6 +19,7 @@ public static class TaskTools
         [Description("Task id — returns this task's runtime info (requires taskType).")] long? taskId = null,
         [Description("Subscription name — returns this subscription's processing state.")] string? subscriptionName = null,
         [Description("Add deep diagnostics for the taskType family (requires taskType).")] bool includeDiagnostics = false,
+        [Description("With includeDiagnostics for an ETL/Replication family, also fetch rolling performance history (and replication conflicts) — large; omitted by default.")] bool includePerformance = false,
         CancellationToken cancellationToken = default)
     {
         var result = new Dictionary<string, object?>();
@@ -36,6 +37,7 @@ public static class TaskTools
             result["diagnostics"] = await TaskDiagnostics(
                 client, databaseName,
                 taskType ?? throw new McpException("taskType is required when includeDiagnostics is set."),
+                includePerformance,
                 cancellationToken);
 
         if (result.Count == 0)
@@ -48,16 +50,17 @@ public static class TaskTools
         RavenDbAdminClient client,
         string databaseName,
         OngoingTaskType taskType,
+        bool includePerformance,
         CancellationToken cancellationToken)
         => taskType switch
         {
             OngoingTaskType.Backup => await client.GetBackupDiagnostics(databaseName, cancellationToken),
             OngoingTaskType.RavenEtl or OngoingTaskType.SqlEtl or OngoingTaskType.OlapEtl
                 or OngoingTaskType.ElasticSearchEtl or OngoingTaskType.QueueEtl
-                => await client.GetEtlDiagnostics(databaseName, cancellationToken),
+                => await client.GetEtlDiagnostics(databaseName, includePerformance, cancellationToken),
             OngoingTaskType.Subscription => await client.GetSubscriptionDiagnostics(databaseName, cancellationToken),
             OngoingTaskType.Replication or OngoingTaskType.PullReplicationAsHub or OngoingTaskType.PullReplicationAsSink
-                => await client.GetReplicationTasksDetails(databaseName, cancellationToken),
+                => await client.GetReplicationTasksDetails(databaseName, includePerformance, cancellationToken),
             _ => throw new McpException($"No deep diagnostics available for task type '{taskType}'.")
         };
 }

@@ -88,17 +88,17 @@ public sealed partial class RavenDbAdminClient
 
     public async Task<GetReplicationTasksDetailsResult> GetReplicationTasksDetails(
         string databaseName,
+        bool includePerformance,
         CancellationToken cancellationToken)
     {
         var tasks = await GetReplicationTasks(databaseName, cancellationToken);
-        var performance = await GetReplicationPerformance(databaseName, cancellationToken);
 
         return new GetReplicationTasksDetailsResult(
             databaseName,
             tasks.Tasks,
-            performance.Performance,
+            includePerformance ? (await GetReplicationPerformance(databaseName, cancellationToken)).Performance : OmittedLargeAxis,
             await TryGetDatabaseJson(databaseName, "/replication/active-connections", cancellationToken),
-            await TryGetDatabaseJson(databaseName, "/replication/conflicts", cancellationToken),
+            includePerformance ? await TryGetDatabaseJson(databaseName, "/replication/conflicts", cancellationToken) : OmittedLargeAxis,
             await TryGetDatabaseJson(databaseName, "/replication/debug/outgoing-failures", cancellationToken),
             await TryGetDatabaseJson(databaseName, "/replication/debug/incoming-last-activity-time", cancellationToken),
             await TryGetDatabaseJson(databaseName, "/replication/debug/incoming-rejection-info", cancellationToken),

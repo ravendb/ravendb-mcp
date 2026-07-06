@@ -257,8 +257,13 @@ public sealed partial class RavenDbAdminClient
             await TryGetServerJson("/admin/configuration/server-wide/backup", cancellationToken));
     }
 
+    // Rolling performance/conflict history is unbounded; omitted from the default bundle and fetched only on request.
+    private static readonly JsonElement OmittedLargeAxis = JsonSerializer.SerializeToElement(
+        new { omitted = true, hint = "Large rolling-history axis; set includePerformance=true on get_tasks to fetch it." });
+
     public async Task<GetEtlDiagnosticsResult> GetEtlDiagnostics(
         string databaseName,
+        bool includePerformance,
         CancellationToken cancellationToken)
     {
         var tasks = await GetEtlTasks(databaseName, cancellationToken);
@@ -267,7 +272,7 @@ public sealed partial class RavenDbAdminClient
             databaseName,
             tasks.Tasks,
             await TryGetDatabaseJson(databaseName, "/etl/stats", cancellationToken),
-            await TryGetDatabaseJson(databaseName, "/etl/performance", cancellationToken),
+            includePerformance ? await TryGetDatabaseJson(databaseName, "/etl/performance", cancellationToken) : OmittedLargeAxis,
             await TryGetDatabaseJson(databaseName, "/etl/debug/stats", cancellationToken),
             await TryGetDatabaseJson(databaseName, "/etl/progress", cancellationToken));
     }
