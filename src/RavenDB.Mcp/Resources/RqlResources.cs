@@ -14,7 +14,7 @@ public static class RqlResources
     {
         string version;
         try { version = await client.GetDocsVersion(cancellationToken); }
-        catch { version = "?"; }
+        catch (Exception e) when (e is not OperationCanceledException) { version = "?"; }
         return Read("index.md").Replace("{VERSION}", version, StringComparison.Ordinal);
     }
 
