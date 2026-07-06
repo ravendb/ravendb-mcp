@@ -187,7 +187,10 @@ public sealed partial class RavenDbAdminClient
         => SampleServerTextFeed("thread_contention", "/admin/debug/threads/contention", seconds, cancellationToken);
 
     public async Task<DiagnosticTextSampleResult> SampleThreadRunaway(CancellationToken cancellationToken)
-        => new("thread_runaway", 0, await GetServerText("/admin/debug/threads/runaway", cancellationToken), false, 0);
+    {
+        var sample = TruncateSample(await GetServerText("/admin/debug/threads/runaway", cancellationToken));
+        return new("thread_runaway", 0, sample.Text, sample.Truncated, sample.Limit);
+    }
 
     public async Task<GetStackTracesResult> GetStackTraces(CancellationToken cancellationToken)
     {

@@ -75,7 +75,7 @@ public sealed class DataAndShapeTests(RavenDbTestFixture fixture)
         // GC events stream over a plain GET (unlike the WebSocket-only *_watch endpoints).
         var sample = await NewClient().SampleGcEvents(1, cts.Token);
 
-        Assert.Equal(131_072, sample.Limit);
+        Assert.Equal(RavenDbAdminClient.SampleCharLimit, sample.Limit);
         Assert.False(sample.Truncated);
     }
 
@@ -89,11 +89,11 @@ public sealed class DataAndShapeTests(RavenDbTestFixture fixture)
         // samples without throwing, and carry the truncation/limit metadata.
         var logs = await client.SampleAdminLogs(2, cts.Token);
         Assert.Equal("admin_logs", logs.Kind);
-        Assert.Equal(131_072, logs.Limit);
+        Assert.Equal(RavenDbAdminClient.SampleCharLimit, logs.Limit);
 
         var dashboard = await client.SampleClusterDashboard(2, cts.Token);
         Assert.Equal("cluster_dashboard", dashboard.Kind);
-        Assert.Equal(131_072, dashboard.Limit);
+        Assert.Equal(RavenDbAdminClient.SampleCharLimit, dashboard.Limit);
         // The dashboard pushes widget data within a couple of seconds.
         Assert.False(string.IsNullOrEmpty(dashboard.Sample));
     }

@@ -208,7 +208,15 @@ public sealed partial class RavenDbAdminClient(
         return content;
     }
 
-    private const int SampleCharLimit = 131_072;
+    // Kept below the tool-result token ceiling so a full sample survives JSON-string escaping; samples are
+    // debug text and flag truncation when capped.
+    internal const int SampleCharLimit = 30_000;
+
+    // Cap a one-shot (non-streamed) text response to the same bound as the streamed feeds.
+    private static TextSample TruncateSample(string text)
+        => text.Length > SampleCharLimit
+            ? new TextSample(text[..SampleCharLimit], true, SampleCharLimit)
+            : new TextSample(text, false, SampleCharLimit);
 
     private async Task<TextSample> GetServerTextSample(
         string path,

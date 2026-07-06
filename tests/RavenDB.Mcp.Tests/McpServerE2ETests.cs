@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using RavenDB.Mcp.Configuration;
+using RavenDB.Mcp.RavenDB;
 
 namespace RavenDB.Mcp.Tests;
 
@@ -152,7 +153,7 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
 
         using var feed = await client.CallTool("sample_live_feed", new { feed = "GcEvents", seconds = 1 }, timeout.Token);
         Assert.Equal("gc_events", feed.RootElement.GetProperty("kind").GetString());
-        Assert.Equal(131_072, feed.RootElement.GetProperty("limit").GetInt32());
+        Assert.Equal(RavenDbAdminClient.SampleCharLimit, feed.RootElement.GetProperty("limit").GetInt32());
 
         using var wait = await client.CallTool(
             "wait_for_completion",

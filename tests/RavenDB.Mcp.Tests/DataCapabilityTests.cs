@@ -70,11 +70,11 @@ public sealed class DataCapabilityTests(RavenDbTestFixture fixture)
 
         var allocations = await client.SampleAllocations(1, cts.Token);
         Assert.Equal("allocations", allocations.Kind);
-        Assert.Equal(131_072, allocations.Limit);
+        Assert.Equal(RavenDbAdminClient.SampleCharLimit, allocations.Limit);
 
         var contention = await client.SampleThreadContention(1, cts.Token);
         Assert.Equal("thread_contention", contention.Kind);
-        Assert.Equal(131_072, contention.Limit);
+        Assert.Equal(RavenDbAdminClient.SampleCharLimit, contention.Limit);
     }
 
     [Fact]
