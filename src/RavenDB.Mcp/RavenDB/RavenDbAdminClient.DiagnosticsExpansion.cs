@@ -79,7 +79,8 @@ public sealed partial class RavenDbAdminClient
         var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"POST {path} failed with {(int)response.StatusCode}: {responseText}");
+            throw new RavenRequestException((int)response.StatusCode, responseText,
+                $"POST {path} failed with {(int)response.StatusCode}: {responseText}");
 
         return JsonSerializer.Deserialize<JsonElement>(responseText);
     }

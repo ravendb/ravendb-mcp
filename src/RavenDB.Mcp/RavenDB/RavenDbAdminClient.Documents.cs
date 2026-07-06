@@ -122,17 +122,60 @@ public sealed partial class RavenDbAdminClient
         if (MutatingQuery.IsMatch(query))
             throw new ArgumentException("run_query is read-only; UPDATE/patch queries are not allowed.", nameof(query));
 
-        var result = await PostDatabaseJson(
-            databaseName,
-            "/queries",
-            new
-            {
-                Query = query,
-                Start = Math.Max(start ?? 0, 0),
-                PageSize = Math.Clamp(pageSize ?? 25, 1, 128)
-            },
-            cancellationToken);
+        JsonElement result;
+        try
+        {
+            result = await PostDatabaseJson(
+                databaseName,
+                "/queries",
+                new
+                {
+                    Query = query,
+                    Start = Math.Max(start ?? 0, 0),
+                    PageSize = Math.Clamp(pageSize ?? 25, 1, 128)
+                },
+                cancellationToken);
+        }
+        catch (RavenRequestException e) when (TryQueryError(e.ResponseText, out var queryError))
+        {
+            // Malformed RQL — hand the parser/validation message back so the caller can fix it.
+            result = queryError;
+        }
 
         return new RunQueryResult(databaseName, query, result);
     }
+
+    // RavenDB reports a bad query as a 500 whose body Type is a query parse/validation exception; a genuine
+    // server fault has a different Type and is left to propagate.
+    private static bool TryQueryError(string responseText, out JsonElement error)
+    {
+        error = default;
+        try
+        {
+            var body = JsonSerializer.Deserialize<JsonElement>(responseText);
+            if (!body.TryGetProperty("Type", out var t) || t.ValueKind != JsonValueKind.String)
+                return false;
+
+            var type = t.GetString()!;
+            if (!type.Contains("ParseException", StringComparison.Ordinal)
+                && !type.Contains("InvalidQueryException", StringComparison.Ordinal))
+                return false;
+
+            var message = body.TryGetProperty("Message", out var m) && m.ValueKind == JsonValueKind.String
+                ? m.GetString()!
+                : responseText;
+            error = JsonSerializer.SerializeToElement(new { Error = message });
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+}
+
+public sealed class RavenRequestException(int statusCode, string responseText, string message) : Exception(message)
+{
+    public int StatusCode { get; } = statusCode;
+    public string ResponseText { get; } = responseText;
 }
