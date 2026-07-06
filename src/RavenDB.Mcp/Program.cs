@@ -54,7 +54,8 @@ builder.Services
 
         await next(context, cancellationToken);
     }))
-    .WithToolsFromAssembly();
+    .WithToolsFromAssembly()
+    .WithResourcesFromAssembly();
 
 await builder.Build().RunAsync();
 

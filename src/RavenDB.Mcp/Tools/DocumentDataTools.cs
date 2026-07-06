@@ -56,7 +56,7 @@ public static class DocumentDataTools
     }
 
     [McpServerTool(Name = "run_query", ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = true)]
-    [Description("Run a read-only RQL query and return result rows plus query metadata (TotalResults, IndexName, IsStale, DurationInMs). Paged via start/pageSize (1-128). Mutating UPDATE/patch queries are rejected. Returns real document data.")]
+    [Description("Read-only RQL (no UPDATE/patch; page start/pageSize 1-128). Features | where: and or not in all-in between startsWith endsWith exists regex search boost fuzzy proximity exact lucene intersect cmpxchg id | order: cast score random custom | select: distinct projection js declare load | group: count sum key array | include: counters timeseries revisions highlight | spatial facet suggest morelikethis vector.search. Names only; for syntax read rql://index then the feature resource — don't write RQL from memory.")]
     public static Task<RunQueryResult> RunQuery(
         RavenDbAdminClient client,
         string databaseName,

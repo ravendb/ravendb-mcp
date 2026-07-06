@@ -10,6 +10,17 @@ namespace RavenDB.Mcp.RavenDB;
 
 public sealed partial class RavenDbAdminClient
 {
+    // Leading major.minor of the connected server, e.g. "7.2" — the docs.ravendb.net version segment.
+    // Extracts only the numeric prefix so custom/dev suffixes (7.2-custom, 8.0-nightly, 7.2.15) can't leak into a URL.
+    public async Task<string> GetDocsVersion(CancellationToken cancellationToken)
+    {
+        var build = await store.Maintenance.Server.SendAsync(new GetBuildNumberOperation(), cancellationToken);
+        var match = System.Text.RegularExpressions.Regex.Match(build.ProductVersion ?? string.Empty, @"^\d+\.\d+");
+        return match.Success
+            ? match.Value
+            : throw new InvalidOperationException($"Server ProductVersion '{build.ProductVersion}' has no major.minor; use rql://docs/{{version}} explicitly.");
+    }
+
     public async Task<GetServerInfoResult> GetServerInfo(CancellationToken cancellationToken)
     {
         var buildNumber = await store.Maintenance.Server.SendAsync(
