@@ -61,7 +61,8 @@ public sealed partial class RavenDbAdminClient(
     private static readonly HashSet<string> SecretContainers = new(StringComparer.OrdinalIgnoreCase)
     {
         "SqlConnectionStrings", "OlapConnectionStrings", "ElasticSearchConnectionStrings",
-        "QueueConnectionStrings", "RavenConnectionStrings", "AiConnectionStrings"
+        "QueueConnectionStrings", "RavenConnectionStrings", "AiConnectionStrings",
+        "SinkPullReplications", "HubPullReplications"
     };
 
     // Masked inside a secret container (broad — ambiguous names are safe here).
@@ -69,14 +70,15 @@ public sealed partial class RavenDbAdminClient(
     {
         "Password", "Pwd", "ApiKey", "ApiKeyId", "Secret", "SecretKey", "AccessKey", "AccountKey",
         "AwsSecretKey", "AwsAccessKey", "SasToken", "SharedAccessKey", "GoogleCredentialsJson",
-        "CertificateBase64", "Token", "AuthToken"
+        "CertificateBase64", "CertificateWithPrivateKey", "CertificatePassword", "Token", "AuthToken"
     };
 
     // Unambiguous subset — the global backstop, masked anywhere in the record.
     private static readonly HashSet<string> GlobalSecretKeys = new(StringComparer.OrdinalIgnoreCase)
     {
         "Password", "ApiKey", "SecretKey", "AccountKey", "AwsSecretKey",
-        "SasToken", "SharedAccessKey", "GoogleCredentialsJson"
+        "SasToken", "SharedAccessKey", "GoogleCredentialsJson",
+        "CertificateWithPrivateKey", "CertificatePassword"
     };
 
     // Secret tokens in connection-string text (incl. prefixed forms like sasl.password) and URL userinfo.

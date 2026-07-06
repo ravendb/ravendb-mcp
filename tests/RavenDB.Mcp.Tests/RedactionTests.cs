@@ -83,6 +83,18 @@ public sealed class RedactionTests
     }
 
     [Fact]
+    public void MasksPullReplicationSinkCertificateAndPassword()
+    {
+        var r = Redact("""
+        { "SinkPullReplications": [ { "Name": "sink", "CertificateWithPrivateKey": "MIIKcQIBAzCC...base64pfx", "CertificatePassword": "pfxpass" } ] }
+        """);
+        var sink = r.GetProperty("SinkPullReplications")[0];
+        Assert.Equal("sink", sink.GetProperty("Name").GetString());
+        Assert.Equal(Redacted, sink.GetProperty("CertificateWithPrivateKey").GetString());
+        Assert.Equal(Redacted, sink.GetProperty("CertificatePassword").GetString());
+    }
+
+    [Fact]
     public void PreservesNonSecretConnectionString()
     {
         var r = Redact("""
