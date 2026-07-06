@@ -223,8 +223,14 @@ public enum ClusterInclude
     /// <summary>All registered HTTP routes — large; request on its own.</summary>
     ServerRoutes,
 
-    /// <summary>Cluster-level diagnostics (observer decisions, cluster log, engine logs, ...).</summary>
-    ClusterDiagnostics
+    /// <summary>Light cluster-level diagnostics (observer decisions, remote connections, engine logs, state changes).</summary>
+    ClusterDiagnostics,
+
+    /// <summary>Raft state-machine log — large; request on its own.</summary>
+    ClusterLog,
+
+    /// <summary>Cluster history logs — large; request on its own.</summary>
+    ClusterHistory
 }
 
 /// <summary>Which debug package <c>collect_debug_package</c> downloads.</summary>

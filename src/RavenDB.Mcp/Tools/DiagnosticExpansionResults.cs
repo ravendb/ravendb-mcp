@@ -15,8 +15,6 @@ public sealed record GetServerDiagnosticsOverviewResult(
 
 public sealed record GetClusterDiagnosticsOverviewResult(
     JsonElement ObserverDecisions,
-    JsonElement ClusterLog,
-    JsonElement History,
     JsonElement RemoteConnections,
     JsonElement EngineLogs,
     JsonElement StateChanges);

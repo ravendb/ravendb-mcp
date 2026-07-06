@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Raven.Client.Documents.Operations;
 using Raven.Client.ServerWide.Commands;
 using RavenDB.Mcp.Tools;
@@ -24,9 +25,33 @@ public sealed partial class RavenDbAdminClient
             await maintenanceTask);
     }
 
-    // Full server configuration dump; large, hence its own facet.
-    public Task<JsonElement> GetServerSettings(CancellationToken cancellationToken) =>
-        TryGetServerJson("/admin/configuration/settings", cancellationToken);
+    // Full server configuration dump; large, hence its own facet. An optional key prefix narrows the
+    // Settings list to matching configuration keys (e.g. "Indexing").
+    public async Task<JsonElement> GetServerSettings(string? keyPrefix, CancellationToken cancellationToken)
+    {
+        var settings = await TryGetServerJson("/admin/configuration/settings", cancellationToken);
+        if (string.IsNullOrWhiteSpace(keyPrefix) || settings.ValueKind != JsonValueKind.Object)
+            return settings;
+
+        var root = JsonNode.Parse(settings.GetRawText())!;
+        var container = root["value"] as JsonObject ?? root.AsObject();
+        if (container["Settings"] is JsonArray entries)
+        {
+            var kept = new JsonArray();
+            foreach (var entry in entries.ToArray())
+            {
+                var keys = entry?["Metadata"]?["Keys"] as JsonArray;
+                if (keys is not null && keys.Any(k =>
+                        k?.GetValue<string>().StartsWith(keyPrefix, StringComparison.OrdinalIgnoreCase) == true))
+                {
+                    entries.Remove(entry);
+                    kept.Add(entry);
+                }
+            }
+            container["Settings"] = kept;
+        }
+        return JsonSerializer.SerializeToElement(root);
+    }
 
     // All registered HTTP routes; large, hence its own facet.
     public Task<JsonElement> GetServerRoutes(CancellationToken cancellationToken) =>
@@ -35,21 +60,25 @@ public sealed partial class RavenDbAdminClient
     public async Task<GetClusterDiagnosticsOverviewResult> GetClusterDiagnosticsOverview(CancellationToken cancellationToken)
     {
         var decisionsTask = TryGetServerJson("/admin/cluster/observer/decisions", cancellationToken);
-        var logTask = TryGetServerJson("/admin/cluster/log", cancellationToken);
-        var historyTask = TryGetServerJson("/admin/debug/cluster/history-logs", cancellationToken);
         var remoteTask = TryGetServerJson("/admin/debug/node/remote-connections", cancellationToken);
         var engineTask = TryGetServerJson("/admin/debug/node/engine-logs", cancellationToken);
         var stateTask = TryGetServerJson("/admin/debug/node/state-change-history", cancellationToken);
-        await Task.WhenAll(decisionsTask, logTask, historyTask, remoteTask, engineTask, stateTask);
+        await Task.WhenAll(decisionsTask, remoteTask, engineTask, stateTask);
 
         return new GetClusterDiagnosticsOverviewResult(
             await decisionsTask,
-            await logTask,
-            await historyTask,
             await remoteTask,
             await engineTask,
             await stateTask);
     }
+
+    // Raft state-machine log; large, hence its own facet.
+    public Task<JsonElement> GetClusterLog(CancellationToken cancellationToken) =>
+        TryGetServerJson("/admin/cluster/log", cancellationToken);
+
+    // Cluster history logs; largest cluster diagnostic, hence its own facet.
+    public Task<JsonElement> GetClusterHistory(CancellationToken cancellationToken) =>
+        TryGetServerJson("/admin/debug/cluster/history-logs", cancellationToken);
 
     public async Task<DiagnosticTextSampleResult> SampleClusterDashboard(int seconds, CancellationToken cancellationToken)
     {
