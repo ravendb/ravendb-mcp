@@ -28,14 +28,14 @@ public sealed class DataAndShapeTests(RavenDbTestFixture fixture)
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var client = NewClient();
 
-        var result = await client.RunQuery(fixture.DatabaseName, "from TestUsers", null, 10, cts.Token);
+        var result = await client.RunQuery(fixture.DatabaseName, "from TestUsers", null, 10, null, false, cts.Token);
         Assert.True(result.Result.GetProperty("TotalResults").GetInt32() >= 1);
         var rows = result.Result.GetProperty("Results");
         Assert.Equal(JsonValueKind.Array, rows.ValueKind);
         Assert.NotEmpty(rows.EnumerateArray());
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            client.RunQuery(fixture.DatabaseName, "from TestUsers update { this.Name = 'x' }", null, 10, cts.Token));
+            client.RunQuery(fixture.DatabaseName, "from TestUsers update { this.Name = 'x' }", null, 10, null, false, cts.Token));
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class DataAndShapeTests(RavenDbTestFixture fixture)
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var client = NewClient();
 
-        var query = await client.RunQuery(fixture.DatabaseName, "from TestUsers", null, 1, cts.Token);
+        var query = await client.RunQuery(fixture.DatabaseName, "from TestUsers", null, 1, null, false, cts.Token);
         var id = query.Result.GetProperty("Results")[0].GetProperty("@metadata").GetProperty("@id").GetString()!;
 
         var found = await client.GetDocument(fixture.DatabaseName, id, cts.Token);

@@ -15,7 +15,7 @@ public sealed class DataCapabilityTests(RavenDbTestFixture fixture)
 
     private async Task<string> SeededDocumentIdAsync(RavenDbAdminClient client, CancellationToken cancellationToken)
     {
-        var query = await client.RunQuery(fixture.DatabaseName, "from TestUsers", null, 1, cancellationToken);
+        var query = await client.RunQuery(fixture.DatabaseName, "from TestUsers", null, 1, null, false, cancellationToken);
         return query.Result.GetProperty("Results")[0].GetProperty("@metadata").GetProperty("@id").GetString()!;
     }
 
