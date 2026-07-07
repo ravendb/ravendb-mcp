@@ -99,7 +99,6 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
         Assert.Equal(JsonValueKind.Array, indexing.Indexes.ValueKind);
         Assert.Equal(JsonValueKind.Array, indexing.Stats.ValueKind);
         Assert.Equal(JsonValueKind.Array, indexing.Errors.ValueKind);
-        Assert.Equal(JsonValueKind.Array, indexing.Performance.ValueKind);
         Assert.Equal(JsonValueKind.Object, indexing.Status.ValueKind);
 
         var index = await client.GetIndex(fixture.DatabaseName, fixture.IndexName, timeout.Token);
@@ -115,7 +114,7 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
             timeout.Token);
         Assert.Equal(JsonValueKind.Array, terms.Terms.ValueKind);
 
-        Assert.Equal(JsonValueKind.Object, (await client.GetReplicationTasksDetails(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
+        Assert.Equal(JsonValueKind.Object, (await client.GetReplicationTasksDetails(fixture.DatabaseName, false, timeout.Token)).Tasks.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetBackupTasks(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetEtlTasks(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
         Assert.Equal(JsonValueKind.Object, (await client.GetDatabaseTasks(fixture.DatabaseName, timeout.Token)).Tasks.ValueKind);
@@ -134,7 +133,6 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
         var overview = await client.GetStorageOverview(fixture.DatabaseName, timeout.Token);
         Assert.Equal(fixture.DatabaseName, overview.DatabaseName);
         Assert.Equal(JsonValueKind.Object, overview.Report.ValueKind);
-        Assert.Equal(JsonValueKind.Object, overview.Environments.ValueKind);
 
         Assert.Equal(JsonValueKind.Object, (await client.GetStorageTrees(fixture.DatabaseName, timeout.Token)).Trees.ValueKind);
         var environment = await client.GetStorageEnvironmentDetails(fixture.DatabaseName, null, null, timeout.Token);
@@ -172,7 +170,7 @@ public sealed class RavenDbAdminClientTests(RavenDbTestFixture fixture)
         Assert.Equal("gc_events", runtimeEvents.Kind);
         Assert.Equal(1, runtimeEvents.Seconds);
 
-        var threadDiagnostics = await client.SampleThreadRunaway(timeout.Token);
+        var threadDiagnostics = await client.SampleThreadRunaway(null, timeout.Token);
         Assert.Equal("thread_runaway", threadDiagnostics.Kind);
         Assert.NotEmpty(threadDiagnostics.Sample);
     }

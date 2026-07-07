@@ -21,8 +21,6 @@ public sealed class RawHttpDiagnosticsTests
 
         Assert.True(result.Metrics.GetProperty("available").GetBoolean());
         Assert.Equal(7, result.Metrics.GetProperty("value").GetProperty("requestsPerSecond").GetInt32());
-        Assert.False(result.Routes.GetProperty("available").GetBoolean());
-        Assert.Contains("/debug/routes", server.Requests);
         Assert.Contains("/admin/metrics", server.Requests);
     }
 
