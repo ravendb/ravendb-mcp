@@ -139,7 +139,7 @@ public sealed partial class RavenDbAdminClient
         {
             result = await PostDatabaseJson(databaseName, "/queries", body, cancellationToken);
         }
-        catch (RavenRequestException e) when (TryQueryError(e.ResponseText, out var queryError))
+        catch (RavenRequestException e) when (TryQueryError(e.StatusCode, e.ResponseText, out var queryError))
         {
             // Malformed RQL — hand the parser/validation message back so the caller can fix it.
             return new RunQueryResult(databaseName, query, queryError);
@@ -153,7 +153,7 @@ public sealed partial class RavenDbAdminClient
 
     // Reduce each row/include's @metadata to identity only (@id, @collection); drops change-vector, flags,
     // timestamps, CLR type, scores. Keeps results referenceable while cutting the bulk of a result set.
-    private static JsonElement SlimMetadata(JsonElement result)
+    internal static JsonElement SlimMetadata(JsonElement result)
     {
         var root = JsonNode.Parse(result.GetRawText());
 
@@ -181,10 +181,21 @@ public sealed partial class RavenDbAdminClient
         return JsonSerializer.SerializeToElement(root);
     }
 
-    // RavenDB reports a bad query as a 500 whose body Type is a query parse/validation exception; a genuine
-    // server fault has a different Type and is left to propagate.
-    private static bool TryQueryError(string responseText, out JsonElement error)
+    // RavenDB reports a bad query as an error whose body Type is a query parse/validation exception (or a
+    // missing target index); a genuine server fault has a different Type and is left to propagate.
+    internal static bool TryQueryError(int statusCode, string responseText, out JsonElement error)
     {
+        // A bodyless 404 from the queries endpoint means the named index doesn't exist.
+        if (statusCode == 404 && string.IsNullOrWhiteSpace(responseText))
+        {
+            error = JsonSerializer.SerializeToElement(new
+            {
+                Error = "Query target not found (HTTP 404) — the index named in `from index '…'` does not exist.",
+                Hint = "Check the index name with get_database_record (index names) or get_index, or query the collection dynamically: from <Collection>."
+            });
+            return true;
+        }
+
         error = default;
         try
         {
@@ -194,7 +205,8 @@ public sealed partial class RavenDbAdminClient
 
             var type = t.GetString()!;
             if (!type.Contains("ParseException", StringComparison.Ordinal)
-                && !type.Contains("InvalidQueryException", StringComparison.Ordinal))
+                && !type.Contains("InvalidQueryException", StringComparison.Ordinal)
+                && !type.Contains("IndexDoesNotExistException", StringComparison.Ordinal))
                 return false;
 
             var message = body.TryGetProperty("Message", out var m) && m.ValueKind == JsonValueKind.String
