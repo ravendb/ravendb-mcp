@@ -95,6 +95,21 @@ public sealed class RedactionTests
     }
 
     [Fact]
+    public void SecretKeyMasksWholeValue_EvenWhenInlineTokensMatch()
+    {
+        // Values under secret keys must be fully masked; the inline connection-string tokenizer
+        // must not pre-empt with a partial mask (e.g. base64 ending in "sig==" or embedded "pwd=").
+        var r = Redact("""
+        {
+          "SinkPullReplications": [ { "CertificateWithPrivateKey": "MIIKcQIBAzCCSECRETKEYMATERIALxyzsig==" } ],
+          "SomeSection": { "Password": "part1;pwd=x;part3-secret-tail" }
+        }
+        """);
+        Assert.Equal(Redacted, r.GetProperty("SinkPullReplications")[0].GetProperty("CertificateWithPrivateKey").GetString());
+        Assert.Equal(Redacted, Str(r, "SomeSection", "Password"));
+    }
+
+    [Fact]
     public void PreservesNonSecretConnectionString()
     {
         var r = Redact("""

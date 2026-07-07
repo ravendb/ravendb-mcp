@@ -138,15 +138,19 @@ public sealed partial class RavenDbAdminClient(
     {
         var keys = inSecretContainer ? ScopedSecretKeys : GlobalSecretKeys;
 
+        // A secret key masks the whole value; inline tokenization is only for non-secret keys,
+        // where the secret is a fragment of otherwise-useful text (connection strings, URLs).
+        if (keys.Contains(key))
+            return RedactedValue;
+
         if (value.TryGetValue(out string? text) && text is not null)
         {
             var masked = RedactInlineSecrets(text);
             if (!string.Equals(masked, text, StringComparison.Ordinal))
                 return masked; // inline secret(s) tokenized — non-secret parts preserved
-            return keys.Contains(key) ? RedactedValue : null;
         }
 
-        return keys.Contains(key) ? RedactedValue : null;
+        return null;
     }
 
     private static string RedactInlineSecrets(string text)
