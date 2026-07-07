@@ -64,7 +64,7 @@ public static class DocumentDataTools
         [Description("Zero-based offset of the first row to return (default 0).")] int? start = null,
         [Description("Max rows to return, 1-128 (default 25).")] int? pageSize = null,
         [Description("Values for $params as a JSON object, e.g. {\"stage\":\"Closed Won\"} for `where Stage = $stage`. Prefer this over inlining literals.")] JsonElement? parameters = null,
-        [Description("Include full per-row @metadata (change-vector, flags, timestamps, CLR type). Default false; @id and @collection are always kept.")] bool metadata = false,
+        [Description("Include full per-row @metadata (change-vector, flags, timestamps, CLR type). Default false; @id and @collection are kept when present.")] bool metadata = false,
         CancellationToken cancellationToken = default)
     {
         return client.RunQuery(databaseName, query, start, pageSize, parameters, metadata, cancellationToken);

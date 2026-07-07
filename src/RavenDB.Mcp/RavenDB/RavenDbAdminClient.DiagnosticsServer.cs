@@ -25,11 +25,15 @@ public sealed partial class RavenDbAdminClient
             await maintenanceTask);
     }
 
+    public async Task<JsonElement> GetServerSettings(string? keyPrefix, CancellationToken cancellationToken)
+        => FilterServerSettings(
+            RedactSecrets(await TryGetServerJson("/admin/configuration/settings", cancellationToken)),
+            keyPrefix);
+
     // The full config dump is ~200KB, so this is progressive: no prefix returns the index of available
     // key prefixes with counts; a prefix returns the matching settings entries.
-    public async Task<JsonElement> GetServerSettings(string? keyPrefix, CancellationToken cancellationToken)
+    internal static JsonElement FilterServerSettings(JsonElement settings, string? keyPrefix)
     {
-        var settings = RedactSecrets(await TryGetServerJson("/admin/configuration/settings", cancellationToken));
         if (settings.ValueKind != JsonValueKind.Object)
             return settings;
 
@@ -44,8 +48,8 @@ public sealed partial class RavenDbAdminClient
         if (string.IsNullOrWhiteSpace(keyPrefix))
         {
             var prefixes = new SortedDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (var key in entries.SelectMany(KeysOf))
-                prefixes[key.Split('.', 2)[0]] = prefixes.GetValueOrDefault(key.Split('.', 2)[0]) + 1;
+            foreach (var prefix in entries.SelectMany(KeysOf).Select(k => k.Split('.', 2)[0]))
+                prefixes[prefix] = prefixes.GetValueOrDefault(prefix) + 1;
 
             return ToJson(new
             {
@@ -56,6 +60,7 @@ public sealed partial class RavenDbAdminClient
             });
         }
 
+        var totalEntries = entries.Count;
         var kept = new JsonArray();
         foreach (var entry in entries.ToArray())
             if (KeysOf(entry).Any(k => k.StartsWith(keyPrefix, StringComparison.OrdinalIgnoreCase)))
@@ -63,8 +68,8 @@ public sealed partial class RavenDbAdminClient
                 entries.Remove(entry);
                 kept.Add(entry);
             }
-        container["Settings"] = kept;
-        return JsonSerializer.SerializeToElement(root);
+
+        return ToJson(new { available = true, totalEntries, matched = kept.Count, settings = kept });
     }
 
     // All registered HTTP routes; large, hence its own facet.

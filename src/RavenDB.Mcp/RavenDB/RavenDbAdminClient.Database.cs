@@ -31,7 +31,7 @@ public sealed partial class RavenDbAdminClient
 
     // Full index definitions/history dominate the record (~90%+) and duplicate get_index; reduce them to
     // name+count so the record stays readable. Use get_index for one index's definition, staleness, or history.
-    private static JsonElement SummarizeRecordIndexes(JsonElement record)
+    internal static JsonElement SummarizeRecordIndexes(JsonElement record)
     {
         var root = JsonNode.Parse(record.GetRawText())!.AsObject();
         var summarized = false;

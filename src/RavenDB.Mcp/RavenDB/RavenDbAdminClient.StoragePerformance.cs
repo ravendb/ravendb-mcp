@@ -200,13 +200,15 @@ public sealed partial class RavenDbAdminClient
     // The raw snapshot lists every thread with a fat per-thread IoStats block. Default: the hottest few in full
     // plus a compact index of all threads (Id/Name/CpuUsage) so the caller can pick a name prefix; with a prefix:
     // full detail for matching threads. Threads sorted by CPU descending.
-    private static string SummarizeRunawayThreads(string json, string? namePrefix)
+    internal static string SummarizeRunawayThreads(string json, string? namePrefix)
     {
-        JsonNode? root;
-        try { root = JsonNode.Parse(json); }
+        JsonNode? parsed;
+        try { parsed = JsonNode.Parse(json); }
         catch (JsonException) { return json; }
 
-        if (root?["Runaway Threads"] is not JsonObject runaway || runaway["List"] is not JsonArray list)
+        if (parsed is not JsonObject root
+            || root["Runaway Threads"] is not JsonObject runaway
+            || runaway["List"] is not JsonArray list)
             return json;
 
         var sorted = list.OfType<JsonObject>()
