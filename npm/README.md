@@ -1,11 +1,7 @@
 # @ravendb/mcp
 
-A local, **read-only** [MCP](https://modelcontextprotocol.io) diagnostics server for RavenDB,
-distributed for `npx`.
-
-This package is a thin launcher: it resolves the self-contained native binary for your platform
-(shipped as a platform-specific optional dependency) and runs it over stdio. **No .NET runtime is
-required** — the binary bundles it. Node.js 18+ is the only prerequisite.
+A local, read-only [MCP](https://modelcontextprotocol.io) diagnostics server for RavenDB.
+No .NET required — run it with `npx` (Node.js 18+).
 
 ## Usage
 

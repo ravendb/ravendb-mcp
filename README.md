@@ -1,22 +1,22 @@
 # RavenDB MCP
 
-A local, read-only [MCP](https://modelcontextprotocol.io) diagnostics server for RavenDB. It runs beside an AI agent over stdio, connects to one RavenDB cluster, and exposes **21 read-only tools** so the agent can inspect cluster, database, index, task, storage, and performance state — plus logs, support packages, and read-only data — without hand-writing client code or hitting the REST API.
+A local, read-only [MCP](https://modelcontextprotocol.io) diagnostics server for RavenDB. Point it at a cluster and your AI agent can inspect cluster, database, index, task, storage, and performance state — plus logs, support packages, and your data — through **21 read-only tools**.
 
 ## Quick start
 
-Run it with **npx** — only Node.js needed; the launcher fetches the self-contained binary, so no .NET is required:
+Run it with **npx**:
 
 ```powershell
 claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- npx -y @ravendb/mcp
 ```
 
-Or with **dnx** (.NET 10 SDK):
+Or with **dnx**:
 
 ```powershell
 claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- dnx RavenDB.Mcp --yes
 ```
 
-Alternatively, download a self-contained executable from the [Releases](https://github.com/ravendb/ravendb-mcp/releases) page — no runtime required — and point your client at it.
+Or download a prebuilt executable from the [Releases](https://github.com/ravendb/ravendb-mcp/releases) page.
 
 Then ask the agent *“list my RavenDB databases.”* Other OSes, secured (HTTPS + certificate) clusters, VS Code / Claude Desktop wiring, and the full configuration reference are in **[INSTALL.md](INSTALL.md)**.
 
@@ -34,18 +34,16 @@ To work with several clusters, register the server more than once under differen
 
 ## Tools
 
-**21 read-only tools**, `snake_case`. Most are *facet* tools — one tool per subject that takes enum/array selectors (the agent sees the allowed values as a JSON-Schema `enum`) and returns only the requested sections, so a whole area is covered without bloating `tools/list`.
+**21 read-only tools** (`snake_case`). Most are *facet* tools — one per subject that takes selectors and returns only the sections you ask for.
 
 - **Facets:** `get_cluster_overview`, `get_server_config`, `get_server_resources`, `get_network_details`, `get_database_stats`, `get_database_config`, `get_index`, `get_tasks`, `get_live_workload`, `inspect_storage`, `get_document_data`, `sample_live_feed`, `wait_for_completion`, `collect_debug_package`, `get_ai_agents`
 - **Singletons:** `list_databases`, `get_database_record`, `get_notifications`, `run_query`, `list_compare_exchange`, `export_server_logs`
 
-Oversized diagnostics return a light overview by default with a documented way to drill in, and tools that produce large or binary output (logs, debug packages) write a file and return a reference — `{ path, contentType, bytes }` — so results stay within the model's context window.
-
-The server also publishes **`rql://` documentation resources** (version-aware, starting at `rql://index`), and `run_query` surfaces parse errors that point back at them — so the agent writes correct RQL for your server version instead of guessing.
+Large or binary output (logs, debug packages) is written to a file and returned as a reference. The server also publishes version-aware **`rql://` query-documentation resources**, so the agent writes correct RQL for your server version.
 
 ## Safety
 
-Read-only by design: there are no write or delete tools, and tools carry MCP read-only annotations. Connection-string secrets (passwords, API keys, cloud credentials, SAS tokens) are masked as `***redacted***` at the database-record boundary, so they never leak through `get_database_record` or any tool projecting it. What the agent can see is ultimately bounded by the configured certificate's RavenDB permissions — an **Operator** certificate is the recommended clearance.
+Read-only by design — no write or delete tools. Connection-string secrets (passwords, API keys, cloud credentials, certificates) are masked as `***redacted***`, and what the agent can see is bounded by the certificate's RavenDB permissions — an **Operator** certificate is recommended.
 
 ## License
 

@@ -163,10 +163,7 @@ dotnet tool install --global RavenDB.Mcp
 
 ### Option F — npm via `npx`
 
-When the package is on npm, MCP clients can acquire and launch it with `npx`. The `@ravendb/mcp`
-launcher downloads the self-contained native binary for the current OS/arch (shipped as a
-platform-specific optional dependency), so **no .NET is required** at build or run time — only
-Node.js 18+.
+Acquire and launch in one step with `npx` — Node.js 18+, no .NET required:
 
 ```jsonc
 {
