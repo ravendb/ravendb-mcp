@@ -6,10 +6,12 @@ can inspect cluster / database / index / task / storage / performance state, log
 packages, and read-only data — without hand-writing client code, opening Studio, or hitting the
 raw REST API.
 
-> **Pre-release note.** This package is **not on NuGet yet**. For now you build it from this
-> repository (the [From source](#install-options) options below). The NuGet-based options
-> ([`dnx`](#option-d-nuget-via-dnx-once-published), [global tool](#option-e-global-tool-from-nuget-once-published))
-> are documented for completeness but only work **once the package is published**.
+> **Pre-release note.** This package is **not published to NuGet or npm yet**. For now you build it
+> from this repository (the [From source](#install-options) options below). The registry-based
+> options ([`dnx`](#option-d-nuget-via-dnx-once-published),
+> [global tool](#option-e-global-tool-from-nuget-once-published),
+> [`npx`](#option-f--npm-via-npx-once-published)) are documented for completeness but only work
+> **once the package is published**.
 
 ---
 
@@ -23,6 +25,7 @@ raw REST API.
   - [Option C — Run from source (`dotnet run`)](#option-c--run-from-source-dotnet-run)
   - [Option D — NuGet via `dnx` (once published)](#option-d--nuget-via-dnx-once-published)
   - [Option E — Global tool from NuGet (once published)](#option-e--global-tool-from-nuget-once-published)
+  - [Option F — npm via `npx` (once published)](#option-f--npm-via-npx-once-published)
 - [Connecting it to a client](#connecting-it-to-a-client)
   - [Claude Code](#claude-code)
   - [Claude Desktop](#claude-desktop)
@@ -46,6 +49,7 @@ raw REST API.
 | You need | For |
 | --- | --- |
 | **.NET 10 SDK** | Building from source (every pre-release option). Download from <https://dotnet.microsoft.com>. |
+| **Node.js 18+** | Only for the [`npx`](#option-f--npm-via-npx-once-published) install path (once published). |
 | **Claude Code CLI** (`claude`) | Registering and running the server. |
 | **git** | Cloning the repository. |
 | **Network access** to your RavenDB cluster | The server connects out to the URL(s) you configure. |
@@ -166,6 +170,29 @@ dotnet tool install --global RavenDB.Mcp
   "args": ["--config", "C:\\tools\\ravendb-mcp\\ravendb-mcp.json"]
 }
 ```
+
+### Option F — npm via `npx` (once published)
+
+When the package is on npm, MCP clients can acquire and launch it with `npx`. The `@ravendb/mcp`
+launcher downloads the self-contained native binary for the current OS/arch (shipped as a
+platform-specific optional dependency), so **no .NET is required** at build or run time — only
+Node.js 18+.
+
+```jsonc
+{
+  "command": "npx",
+  "args": ["-y", "@ravendb/mcp"],
+  "env": { "RAVENDB_URLS": "http://localhost:8080" }
+}
+```
+
+Or register it with Claude Code directly:
+
+```powershell
+claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- npx -y @ravendb/mcp
+```
+
+Supported platforms: Windows (x64, arm64), macOS (x64, arm64), Linux (x64).
 
 ---
 
@@ -381,6 +408,8 @@ are masked as `***redacted***` at the database-record boundary, so they don't le
 **Do I need .NET installed to run it?**
 With the **self-contained executable (Option A)**, no — the binary bundles the runtime; you only
 need the SDK to build it. The global tool, `dotnet run`, and `dnx` need .NET present on the machine.
+The **`npx` path (Option F)** also needs no .NET — it downloads the same self-contained binary — but
+requires Node.js 18+.
 
 **Do I need Docker?**
 No. Docker is only used for RavenDB test fixtures, not to run the server.
@@ -416,6 +445,6 @@ Yes — pass `--config <path>` as a server argument. It overrides any env vars.
 21 read-only tools. Most are *facet* tools that take selectors and return only the requested
 sections, which keeps the tool list small and the responses scoped.
 
-**Is it published to NuGet yet?**
-Not yet. Until it is, use the from-source options (A/B/C). The `dnx` and NuGet global-tool options
-are documented for when it ships.
+**Is it published to NuGet or npm yet?**
+Not yet. Until it is, use the from-source options (A/B/C). The `dnx`, NuGet global-tool, and `npx`
+options are documented for when it ships.

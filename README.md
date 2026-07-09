@@ -14,6 +14,8 @@ claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- 
 
 Then ask the agent *“list my RavenDB databases.”*
 
+Prefer npm? Once published, `npx -y @ravendb/mcp` runs it with no .NET installed — see [Option F](INSTALL.md#option-f--npm-via-npx-once-published).
+
 Other OSes, secured (HTTPS + certificate) clusters, VS Code / Claude Desktop wiring, the full configuration reference, and troubleshooting are in **[INSTALL.md](INSTALL.md)**.
 
 ## Configuration
@@ -50,4 +52,4 @@ $env:RAVENDB_TEST_URL = "http://127.0.0.1:8070/"
 dotnet test RavenDB.Mcp.slnx -c Release
 ```
 
-CI runs the suite against both unsecured and secured (certificate) RavenDB. Release artifacts — self-contained executables and the NuGet `McpServer` package — are produced by `.github/workflows/release.yml`; the underlying build commands are in [INSTALL.md](INSTALL.md).
+CI runs the suite against both unsecured and secured (certificate) RavenDB. Release artifacts — self-contained executables, the NuGet `McpServer` package, and the npm packages (`@ravendb/mcp`) — are produced by the manually-dispatched workflows in `.github/workflows/` (build & GitHub release, then NuGet, npm, and MCP Registry); the underlying build commands are in [INSTALL.md](INSTALL.md).
