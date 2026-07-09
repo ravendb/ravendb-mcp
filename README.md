@@ -7,7 +7,7 @@ A local, read-only [MCP](https://modelcontextprotocol.io) diagnostics server for
 Build a self-contained executable (no .NET needed at run time) and register it with Claude Code:
 
 ```powershell
-git clone https://github.com/poissoncorp/ravendb-mcp.git; cd ravendb-mcp
+git clone https://github.com/ravendb/ravendb-mcp.git; cd ravendb-mcp
 dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/win-x64
 claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- "$PWD\dist\win-x64\ravendb-mcp.exe"
 ```

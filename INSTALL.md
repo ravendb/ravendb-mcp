@@ -63,7 +63,7 @@ Docker is **not** required to run the server (it's only used for test fixtures).
 
 ```powershell
 # 1. Clone
-git clone https://github.com/poissoncorp/ravendb-mcp.git
+git clone https://github.com/ravendb/ravendb-mcp.git
 cd ravendb-mcp
 
 # 2. Build a standalone executable (pick your OS RID — see Option A)
@@ -91,7 +91,7 @@ binary, no .NET runtime needed at run time, and no build output leaking onto the
 ### Option A — Self-contained executable (recommended, pre-release)
 
 ```powershell
-git clone https://github.com/poissoncorp/ravendb-mcp.git
+git clone https://github.com/ravendb/ravendb-mcp.git
 cd ravendb-mcp
 dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/win-x64
 ```
@@ -117,7 +117,7 @@ Builds a NuGet package locally and installs it as a global tool, so the command 
 via the SDK).
 
 ```powershell
-git clone https://github.com/poissoncorp/ravendb-mcp.git
+git clone https://github.com/ravendb/ravendb-mcp.git
 cd ravendb-mcp
 dotnet pack src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -o dist/package
 dotnet tool install --global --add-source ./dist/package RavenDB.Mcp

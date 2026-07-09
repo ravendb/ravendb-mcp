@@ -25,7 +25,7 @@ claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- 
 
 `RAVENDB_URLS` is required — comma-separated node URLs of a single cluster. For secured (HTTPS)
 clusters, client certificates, the `--config` file, and the full configuration reference, see
-[INSTALL.md](https://github.com/poissoncorp/ravendb-mcp/blob/main/INSTALL.md).
+[INSTALL.md](https://github.com/ravendb/ravendb-mcp/blob/main/INSTALL.md).
 
 ## Supported platforms
 

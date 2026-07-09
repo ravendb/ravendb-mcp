@@ -1,10 +1,10 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
-  "name": "io.github.poissoncorp/ravendb-mcp",
+  "name": "io.github.ravendb/ravendb-mcp",
   "description": "Read-only MCP diagnostics server for RavenDB.",
   "version": "0.2.0",
   "repository": {
-    "url": "https://github.com/poissoncorp/ravendb-mcp",
+    "url": "https://github.com/ravendb/ravendb-mcp",
     "source": "github"
   },
   "packages": [

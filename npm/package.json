@@ -31,10 +31,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/poissoncorp/ravendb-mcp.git"
+    "url": "git+https://github.com/ravendb/ravendb-mcp.git"
   },
-  "homepage": "https://github.com/poissoncorp/ravendb-mcp#readme",
+  "homepage": "https://github.com/ravendb/ravendb-mcp#readme",
   "bugs": {
-    "url": "https://github.com/poissoncorp/ravendb-mcp/issues"
+    "url": "https://github.com/ravendb/ravendb-mcp/issues"
   }
 }
