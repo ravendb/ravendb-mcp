@@ -30,7 +30,7 @@ public sealed class McpServerE2ETests(RavenDbTestFixture fixture)
         Assert.All(toolsArray, tool => Assert.True(
             tool.GetProperty("annotations").GetProperty("readOnlyHint").GetBoolean()));
 
-        // The hybrid output contract (ADR-0010): facet tools carry no outputSchema so strict
+        // The hybrid output contract: facet tools carry no outputSchema so strict
         // clients accept the list. Guard against a regression that reintroduces `true` schemas.
         Assert.All(toolsArray, tool => Assert.False(
             tool.TryGetProperty("outputSchema", out var schema) && schema.ValueKind == JsonValueKind.True));
@@ -350,7 +350,7 @@ internal sealed class McpStdioClient : IAsyncDisposable
         }
 
         // Typed-result tools return structuredContent; opaque-JsonElement/Dictionary tools return the
-        // JSON payload as a text content block (UseStructuredContent is hybrid — see ADR-0010).
+        // JSON payload as a text content block (UseStructuredContent is hybrid).
         if (result.TryGetProperty("structuredContent", out var structuredContent))
             return JsonDocument.Parse(structuredContent.GetRawText());
 

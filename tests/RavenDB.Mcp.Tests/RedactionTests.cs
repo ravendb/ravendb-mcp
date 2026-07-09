@@ -3,7 +3,7 @@ using RavenDB.Mcp.RavenDB;
 
 namespace RavenDB.Mcp.Tests;
 
-// Unit tests for the hybrid connection-string redaction (ADR-0011).
+// Unit tests for the hybrid connection-string redaction.
 public sealed class RedactionTests
 {
     private const string Redacted = "***redacted***";

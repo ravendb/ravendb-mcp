@@ -2,7 +2,7 @@ using ModelContextProtocol;
 
 namespace RavenDB.Mcp.Tools;
 
-// Selector enums for the facet tools (ADR-0010); the SDK maps each to a JSON-Schema `enum`.
+// Selector enums for the facet tools; the SDK maps each to a JSON-Schema `enum`.
 
 /// <summary>Which live server feed <c>sample_live_feed</c> listens to.</summary>
 public enum FeedKind

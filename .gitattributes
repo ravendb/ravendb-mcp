@@ -1,0 +1,6 @@
+# Keep shebang scripts, workflows, and JS launcher LF on every platform.
+*.sh text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

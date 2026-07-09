@@ -29,7 +29,7 @@ public sealed partial class RavenDbAdminClient(
 
     // Raw HTTP diagnostic routes target the configured primary node by design for v1.
     // Typed Client-API calls still fail over across the cluster; raw debug/admin routes do not.
-    // TODO: topology-aware raw scans (per-node fan-out) are deferred — see ADR-0006 / the distribution+hardening plan.
+    // TODO: topology-aware raw scans (per-node fan-out) are deferred.
     private readonly string serverUrl = (options?.Value.Urls.FirstOrDefault() ?? store.Urls.First()).TrimEnd('/');
     private readonly string artifactsPath = string.IsNullOrWhiteSpace(options?.Value.ArtifactsPath)
         ? Path.Combine(Path.GetTempPath(), "ravendb-mcp-artifacts")
@@ -55,7 +55,7 @@ public sealed partial class RavenDbAdminClient(
         return store.Maintenance.ForDatabase(databaseName);
     }
 
-    // Hybrid secret redaction (ADR-0011): inside the connection-string sections, mask secret fields and
+    // Hybrid secret redaction: inside the connection-string sections, mask secret fields and
     // tokenize connection-string text (Server/Database survive); elsewhere a narrow key-name backstop
     // catches stray secrets in unknown sections (fail-safe over fail-open).
     private static readonly HashSet<string> SecretContainers = new(StringComparer.OrdinalIgnoreCase)
