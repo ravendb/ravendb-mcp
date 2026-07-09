@@ -4,7 +4,7 @@ dist/
 node_modules/
 artifacts/
 
-# The npm launcher lives in npm/bin — exempt it from the bin/ rule above.
+# The npm launcher lives in npm/bin; exempt it from the bin/ rule above.
 !npm/bin/
 !npm/bin/**
 

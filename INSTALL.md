@@ -3,7 +3,7 @@
 A local, **read-only** MCP diagnostics server for RavenDB. It runs beside an AI agent over
 **stdio**, connects to a single RavenDB cluster, and exposes **21 read-only tools** so the agent
 can inspect cluster / database / index / task / storage / performance state, logs, support
-packages, and read-only data — without hand-writing client code, opening Studio, or hitting the
+packages, and read-only data, without hand-writing client code, opening Studio, or hitting the
 raw REST API.
 
 ---
@@ -13,12 +13,12 @@ raw REST API.
 - [Prerequisites](#prerequisites)
 - [Quick start (Claude Code)](#quick-start-claude-code)
 - [Install options](#install-options)
-  - [Option A — Self-contained executable](#option-a--self-contained-executable)
-  - [Option B — Global .NET tool from a locally-built package](#option-b--global-net-tool-from-a-locally-built-package)
-  - [Option C — Run from source (`dotnet run`)](#option-c--run-from-source-dotnet-run)
-  - [Option D — NuGet via `dnx`](#option-d--nuget-via-dnx)
-  - [Option E — Global tool from NuGet](#option-e--global-tool-from-nuget)
-  - [Option F — npm via `npx`](#option-f--npm-via-npx)
+  - [Option A: Self-contained executable](#option-a-self-contained-executable)
+  - [Option B: Global .NET tool from a locally-built package](#option-b-global-net-tool-from-a-locally-built-package)
+  - [Option C: Run from source (`dotnet run`)](#option-c-run-from-source-dotnet-run)
+  - [Option D: NuGet via `dnx`](#option-d-nuget-via-dnx)
+  - [Option E: Global tool from NuGet](#option-e-global-tool-from-nuget)
+  - [Option F: npm via `npx`](#option-f-npm-via-npx)
 - [Connecting it to a client](#connecting-it-to-a-client)
   - [Claude Code](#claude-code)
   - [Claude Desktop](#claude-desktop)
@@ -42,11 +42,11 @@ raw REST API.
 | You need | For |
 | --- | --- |
 | **.NET 10 SDK** | For `dnx`, the global tool, or building from source. Download from <https://dotnet.microsoft.com>. |
-| **Node.js 18+** | For the [`npx`](#option-f--npm-via-npx) install path. |
+| **Node.js 18+** | For the [`npx`](#option-f-npm-via-npx) install path. |
 | **Claude Code CLI** (`claude`) | Registering and running the server. |
 | **git** | Cloning the repository. |
 | **Network access** to your RavenDB cluster | The server connects out to the URL(s) you configure. |
-| A **client certificate** (`.pfx`) | Only for **secured** (HTTPS) clusters — see [Secured servers](#secured-servers--certificates). |
+| A **client certificate** (`.pfx`) | Only for **secured** (HTTPS) clusters, see [Secured servers](#secured-servers--certificates). |
 
 Docker is **not** required to run the server (it's only used for test fixtures).
 
@@ -59,7 +59,7 @@ claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- 
 claude mcp list
 ```
 
-`npx` fetches the self-contained binary for your platform — no .NET required. Replace `RAVENDB_URLS`
+`npx` fetches the self-contained binary for your platform, no .NET required. Replace `RAVENDB_URLS`
 with your cluster; for a **secured** cluster add the certificate env vars from
 [Secured servers](#secured-servers--certificates). Then open a Claude Code session and run `/mcp`
 (or just ask *"list my RavenDB databases"*).
@@ -72,13 +72,13 @@ Prefer a .NET workflow, a plain binary, or building from source? See [Install op
 
 Most users pick one of:
 
-- **`npx`** ([Option F](#option-f--npm-via-npx)) — one line, needs only Node.js.
-- **`dnx`** ([Option D](#option-d--nuget-via-dnx)) — one line, needs the .NET 10 SDK.
-- **A prebuilt binary** from the [Releases](https://github.com/ravendb/ravendb-mcp/releases) page — no runtime at all: download, unzip, and point your client at it.
+- **`npx`** ([Option F](#option-f-npm-via-npx)), one line, needs only Node.js.
+- **`dnx`** ([Option D](#option-d-nuget-via-dnx)), one line, needs the .NET 10 SDK.
+- **A prebuilt binary** from the [Releases](https://github.com/ravendb/ravendb-mcp/releases) page, no runtime at all: download, unzip, and point your client at it.
 
 Options A–C below build from this checkout and are for developing the server itself.
 
-### Option A — Self-contained executable
+### Option A: Self-contained executable
 
 ```powershell
 git clone https://github.com/ravendb/ravendb-mcp.git
@@ -97,10 +97,10 @@ Pick the **runtime identifier (RID)** for the target machine:
 | Linux x64 | `linux-x64` | `dist/linux-x64/ravendb-mcp` |
 
 The produced binary is the only file required at run time; the `.pdb` next to it is debug symbols
-and can be ignored. Point your client at this binary — see
+and can be ignored. Point your client at this binary, see
 [Connecting it to a client](#connecting-it-to-a-client).
 
-### Option B — Global .NET tool from a locally-built package
+### Option B: Global .NET tool from a locally-built package
 
 Builds a NuGet package locally and installs it as a global tool, so the command becomes just
 `ravendb-mcp` (no path to manage). Requires the .NET 10 runtime present at run time (you have it
@@ -123,7 +123,7 @@ Update with `dotnet tool update --global --add-source ./dist/package RavenDB.Mcp
 `dotnet tool uninstall --global RavenDB.Mcp`. (You may need to open a new shell after install so
 the tool is on `PATH`.)
 
-### Option C — Run from source (`dotnet run`)
+### Option C: Run from source (`dotnet run`)
 
 For local development on the server itself. Logs go to stderr; the transport is stdio.
 
@@ -135,10 +135,10 @@ dotnet run --project src/RavenDB.Mcp -- --config C:\tools\ravendb-mcp\ravendb-mc
 > which corrupts the JSON-RPC handshake. If you wire this into a client, **build first**
 > (`dotnet build -c Release`) or prefer **Option A**.
 
-### Option D — NuGet via `dnx`
+### Option D: NuGet via `dnx`
 
 When the package is on NuGet.org, MCP clients can acquire and launch it in one shot with the
-.NET 10 `dnx` runner — no separate install step:
+.NET 10 `dnx` runner, no separate install step:
 
 ```jsonc
 {
@@ -148,7 +148,7 @@ When the package is on NuGet.org, MCP clients can acquire and launch it in one s
 }
 ```
 
-### Option E — Global tool from NuGet
+### Option E: Global tool from NuGet
 
 ```powershell
 dotnet tool install --global RavenDB.Mcp
@@ -161,9 +161,9 @@ dotnet tool install --global RavenDB.Mcp
 }
 ```
 
-### Option F — npm via `npx`
+### Option F: npm via `npx`
 
-Acquire and launch in one step with `npx` — Node.js 18+, no .NET required:
+Acquire and launch in one step with `npx`, Node.js 18+, no .NET required:
 
 ```jsonc
 {
@@ -310,7 +310,7 @@ claude mcp add ravendb --scope user --env RAVENDB_URLS=https://node-a.example.de
 ```
 
 - **Use an Operator-clearance certificate.** It grants cluster-wide read access for diagnostics
-  without full Cluster Admin rights — the right level for a read-only diagnostics agent. The
+  without full Cluster Admin rights, the right level for a read-only diagnostics agent. The
   certificate's RavenDB permissions are what ultimately bound what the agent can see.
 - Drop the password env var if your `.pfx` is not password-protected.
 - For **unsecured** (HTTP) clusters, leave both certificate settings unset.
@@ -320,8 +320,8 @@ Download or generate a client certificate from RavenDB Studio → **Manage Serve
 ### Single cluster, multiple nodes
 
 List all of the cluster's node URLs in `RAVENDB_URLS`. The typed RavenDB client **fails over**
-across them; raw diagnostic routes target the **first** URL. The server connects to **one cluster**
-— to inspect a different cluster, register a second MCP server entry with its own name and URLs.
+across them; raw diagnostic routes target the **first** URL. The server connects to **one cluster**.
+To inspect a different cluster, register a second MCP server entry with its own name and URLs.
 
 ### Artifacts path
 
@@ -335,7 +335,7 @@ small reference instead of flooding the context:
 If `RAVENDB_ARTIFACTS_PATH` is **not** set, files default to a **`ravendb-mcp-artifacts` folder
 inside the system temp directory** (`%TEMP%\ravendb-mcp-artifacts` on Windows,
 `$TMPDIR/ravendb-mcp-artifacts` or `/tmp/ravendb-mcp-artifacts` on macOS/Linux). Set the variable
-only when you want artifacts in a **persistent, predictable** location — the OS may purge temp.
+only when you want artifacts in a **persistent, predictable** location, the OS may purge temp.
 
 ---
 
@@ -357,10 +357,10 @@ prompt such as *"list my RavenDB databases"* or *"show cluster overview."*
 # Re-register (e.g. after changing URL/cert): remove then add again
 claude mcp remove ravendb
 
-# Option A — rebuild the binary; same path means the client picks it up on next launch
+# Option A: rebuild the binary; same path means the client picks it up on next launch
 dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/win-x64
 
-# Option B — update the global tool from the rebuilt package
+# Option B: update the global tool from the rebuilt package
 dotnet pack src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -o dist/package
 dotnet tool update --global --add-source ./dist/package RavenDB.Mcp
 ```
@@ -376,7 +376,7 @@ dotnet tool update --global --add-source ./dist/package RavenDB.Mcp
 | Tools never appear after `add` | Open a **new** Claude Code session; user-scope servers load on session start. |
 | `claude mcp add` says the name already exists | `claude mcp remove ravendb` first, then re-add. |
 | Garbage / handshake errors when using `dotnet run` | Build output hit stdout. `dotnet build -c Release` first, or use **Option A**. |
-| Secured cluster rejects the agent | Certificate clearance too low or expired — use an **Operator** cert (or one with read on the target databases). |
+| Secured cluster rejects the agent | Certificate clearance too low or expired, use an **Operator** cert (or one with read on the target databases). |
 | Windows path errors in JSON config | Escape backslashes as `\\`. |
 
 The server logs to **stderr** (stdout is reserved for the JSON-RPC protocol), so client logs are
@@ -387,15 +387,15 @@ where you'll see startup and connection messages.
 ## FAQ
 
 **Is it really read-only? Can it change or delete my data?**
-Yes, read-only. There are no write/delete tools — only metadata/diagnostics plus read-only document
+Yes, read-only. There are no write/delete tools, only metadata/diagnostics plus read-only document
 and query access. Connection-string secrets (passwords, API keys, cloud credentials, SAS tokens)
 are masked as `***redacted***` at the database-record boundary, so they don't leak through
 `get_database_record` or any tool projecting it.
 
 **Do I need .NET installed to run it?**
-With the **self-contained executable (Option A)**, no — the binary bundles the runtime; you only
+With the **self-contained executable (Option A)**, no, the binary bundles the runtime; you only
 need the SDK to build it. The global tool, `dotnet run`, and `dnx` need .NET present on the machine.
-The **`npx` path (Option F)** also needs no .NET — it downloads the same self-contained binary — but
+The **`npx` path (Option F)** also needs no .NET, it downloads the same self-contained binary, but
 requires Node.js 18+.
 
 **Do I need Docker?**
@@ -406,7 +406,7 @@ Secured = HTTPS + client certificate (set `RAVENDB_CERTIFICATE_PATH`, and passwo
 Unsecured = HTTP, no certificate. The server works with both.
 
 **Which certificate clearance should I use?**
-**Operator** is preferred — cluster-wide read for diagnostics without full Cluster Admin. The
+**Operator** is preferred, cluster-wide read for diagnostics without full Cluster Admin. The
 certificate's RavenDB permissions bound what the agent can see.
 
 **Where do exported files go by default?**
@@ -414,7 +414,7 @@ A `ravendb-mcp-artifacts` folder inside the system temp directory. Set `RAVENDB_
 for a persistent location. See [Artifacts path](#artifacts-path).
 
 **Can one server connect to multiple clusters?**
-No — one server targets one cluster. List that cluster's nodes in `RAVENDB_URLS`. For another
+No, one server targets one cluster. List that cluster's nodes in `RAVENDB_URLS`. For another
 cluster, register a second MCP server with a different name.
 
 **My `.pfx` password ends up in the client config in plain text. Is that OK?**
@@ -423,10 +423,10 @@ plaintext on disk, but a single file you control) or a certificate without a pas
 
 **Which RID do I pick for Option A?**
 Match the machine that runs Claude: Windows x64 → `win-x64`, Apple Silicon → `osx-arm64`, etc. See
-the table under [Option A](#option-a--self-contained-executable).
+the table under [Option A](#option-a-self-contained-executable).
 
 **Can I use a config file instead of environment variables?**
-Yes — pass `--config <path>` as a server argument. It overrides any env vars.
+Yes, pass `--config <path>` as a server argument. It overrides any env vars.
 
 **How many tools does it expose, and won't that bloat my context?**
 21 read-only tools. Most are *facet* tools that take selectors and return only the requested
@@ -435,4 +435,4 @@ sections, which keeps the tool list small and the responses scoped.
 **Where is it published?**
 NuGet as `RavenDB.Mcp` (use it with `dnx` or as a global tool) and npm as `@ravendb/mcp` (use it
 with `npx`). Prebuilt self-contained binaries are attached to each GitHub release. You can also
-build from source — see the [install options](#install-options).
+build from source, see the [install options](#install-options).

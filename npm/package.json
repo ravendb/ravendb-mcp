@@ -1,7 +1,7 @@
 {
   "name": "@ravendb/mcp",
   "version": "1.0.0",
-  "description": "Read-only MCP diagnostics server for RavenDB — npx launcher that runs the self-contained native binary for your platform (no .NET required).",
+  "description": "Read-only MCP diagnostics server for RavenDB. Run it with npx; no .NET required.",
   "bin": {
     "ravendb-mcp": "bin/cli.js"
   },

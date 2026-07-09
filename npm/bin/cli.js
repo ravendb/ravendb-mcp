@@ -20,7 +20,7 @@ try {
   process.exit(1);
 }
 
-// stdout is the MCP JSON-RPC stream — never write to it. Inherit stdio so the binary owns it; our own output goes to stderr.
+// stdout is the MCP JSON-RPC stream; never write to it. Inherit stdio so the binary owns it, and our own output goes to stderr.
 const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: 'inherit' });
 
 if (result.error) {

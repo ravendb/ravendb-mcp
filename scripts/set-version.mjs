@@ -1,9 +1,4 @@
-// Sets the release version consistently across every manifest the release checks enforce:
-//   - src/RavenDB.Mcp/RavenDB.Mcp.csproj   <Version>
-//   - .mcp/server.json                     top-level + each package version
-//   - npm/package.json                     version + platform optionalDependencies
-//   - INSTALL.md                           the dnx example (RavenDB.Mcp@<version>)
-//
+// Sets the release version across every manifest the release check enforces.
 // Usage: node scripts/set-version.mjs 1.0.0
 
 import { readFileSync, writeFileSync } from 'node:fs';
