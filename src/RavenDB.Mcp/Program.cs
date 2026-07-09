@@ -27,8 +27,7 @@ builder.Logging.AddConsole(options =>
 
 builder.Services
     .AddOptions<RavenDbOptions>()
-    .Bind(builder.Configuration)
-    .ValidateOnStart();
+    .Bind(builder.Configuration);
 
 builder.Services.AddSingleton<IValidateOptions<RavenDbOptions>, RavenDbOptionsValidator>();
 
@@ -56,7 +55,23 @@ builder.Services
     }))
     .WithToolsFromAssembly();
 
-await builder.Build().RunAsync();
+var app = builder.Build();
+
+try
+{
+    // Validate configuration up front so an invalid setup (e.g. no RavenDB URL) fails with a clean
+    // message instead of the host logging a startup exception with a stack trace.
+    _ = app.Services.GetRequiredService<IOptions<RavenDbOptions>>().Value;
+}
+catch (OptionsValidationException ex)
+{
+    foreach (var failure in ex.Failures)
+        await Console.Error.WriteLineAsync($"ravendb-mcp: {failure}");
+    return 1;
+}
+
+await app.RunAsync();
+return 0;
 
 static IEnumerable<KeyValuePair<string, string?>> MapRavenEnvironment()
 {
