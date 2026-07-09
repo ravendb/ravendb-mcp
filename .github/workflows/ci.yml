@@ -133,6 +133,9 @@ jobs:
       - name: Check platform map matches the launcher's optional dependencies
         run: node npm/scripts/build-platform-packages.mjs --self-check
 
+      - name: Run launcher + generator tests
+        run: node --test npm/test/generator.test.mjs npm/test/launcher.test.mjs
+
       - name: Validate the launcher package
         working-directory: npm
         run: npm pack --dry-run
