@@ -143,7 +143,7 @@ When the package is on NuGet.org, MCP clients can acquire and launch it in one s
 ```jsonc
 {
   "command": "dnx",
-  "args": ["RavenDB.Mcp@0.2.0", "--yes"],
+  "args": ["RavenDB.Mcp@1.0.0", "--yes"],
   "env": { "RAVENDB_URLS": "http://localhost:8080" }
 }
 ```
