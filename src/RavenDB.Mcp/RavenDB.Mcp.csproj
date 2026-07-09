@@ -11,7 +11,12 @@
     <Authors>RavenDB</Authors>
     <Description>Read-only MCP diagnostics server for RavenDB.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>RavenDB;MCP;diagnostics</PackageTags>
+    <PackageProjectUrl>https://github.com/ravendb/ravendb-mcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ravendb/ravendb-mcp.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright © Hibernating Rhinos Ltd.</Copyright>
+    <PackageTags>RavenDB;MCP;model-context-protocol;diagnostics;database</PackageTags>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>ravendb-mcp</ToolCommandName>
     <PackageType>McpServer</PackageType>
