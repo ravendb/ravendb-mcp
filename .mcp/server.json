@@ -39,6 +39,38 @@
           "isRequired": false
         }
       ]
+    },
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@ravendb/mcp",
+      "version": "0.2.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "RAVENDB_URLS",
+          "description": "Comma-separated RavenDB node URLs of a single cluster, e.g. https://a.example:443,https://b.example:443",
+          "isRequired": true
+        },
+        {
+          "name": "RAVENDB_CERTIFICATE_PATH",
+          "description": "Path to a client .pfx certificate for secured RavenDB. Leave empty for unsecured.",
+          "isRequired": false
+        },
+        {
+          "name": "RAVENDB_CERTIFICATE_PASSWORD",
+          "description": "Password for the client .pfx certificate.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "RAVENDB_ARTIFACTS_PATH",
+          "description": "Directory where exported artifacts (logs, packages, dumps) are written.",
+          "isRequired": false
+        }
+      ]
     }
   ]
 }

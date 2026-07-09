@@ -1,0 +1,40 @@
+{
+  "name": "@ravendb/mcp",
+  "version": "0.2.0",
+  "description": "Read-only MCP diagnostics server for RavenDB — npx launcher that runs the self-contained native binary for your platform (no .NET required).",
+  "bin": {
+    "ravendb-mcp": "bin/cli.js"
+  },
+  "files": [
+    "bin/cli.js",
+    "platforms.json"
+  ],
+  "optionalDependencies": {
+    "@ravendb/mcp-win32-x64": "0.2.0",
+    "@ravendb/mcp-win32-arm64": "0.2.0",
+    "@ravendb/mcp-linux-x64": "0.2.0",
+    "@ravendb/mcp-darwin-x64": "0.2.0",
+    "@ravendb/mcp-darwin-arm64": "0.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "author": "RavenDB",
+  "keywords": [
+    "ravendb",
+    "mcp",
+    "modelcontextprotocol",
+    "model-context-protocol",
+    "diagnostics",
+    "database"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/poissoncorp/ravendb-mcp.git"
+  },
+  "homepage": "https://github.com/poissoncorp/ravendb-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/poissoncorp/ravendb-mcp/issues"
+  }
+}
