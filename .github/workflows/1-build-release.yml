@@ -1,0 +1,55 @@
+name: "1. Build & GitHub Release"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Verify version sync
+        id: v
+        shell: pwsh
+        run: |
+          $csproj = [xml](Get-Content src/RavenDB.Mcp/RavenDB.Mcp.csproj)
+          $version = ($csproj.Project.PropertyGroup | Where-Object { $_.Version }).Version
+          $server = Get-Content .mcp/server.json -Raw | ConvertFrom-Json
+          $npm = Get-Content npm/package.json -Raw | ConvertFrom-Json
+          $bad = @()
+          if ($server.version -ne $version) { $bad += "server.json=$($server.version)" }
+          foreach ($p in $server.packages) { if ($p.version -ne $version) { $bad += "server.json[$($p.registryType)]=$($p.version)" } }
+          if ($npm.version -ne $version) { $bad += "npm=$($npm.version)" }
+          foreach ($d in $npm.optionalDependencies.PSObject.Properties) { if ($d.Value -ne $version) { $bad += "npm[$($d.Name)]=$($d.Value)" } }
+          if ($bad.Count -gt 0) { Write-Error "Version mismatch (csproj=$version): $($bad -join '; ')"; exit 1 }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Build self-contained executables
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          foreach ($rid in @('win-x64', 'win-arm64', 'linux-x64', 'osx-x64', 'osx-arm64')) {
+            dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r $rid --self-contained true -p:PublishSingleFile=true -o "publish/$rid"
+            if ($rid.StartsWith('win-')) {
+              Compress-Archive -Path "publish/$rid/*" -DestinationPath "artifacts/ravendb-mcp-$rid.zip" -Force
+            } else {
+              tar -czf "artifacts/ravendb-mcp-$rid.tar.gz" -C "publish/$rid" .
+            }
+          }
+          Get-ChildItem artifacts -File | Sort-Object Name | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+          } | Set-Content artifacts/checksums.txt
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ steps.v.outputs.version }}" artifacts/* --generate-notes

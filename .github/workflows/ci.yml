@@ -117,3 +117,22 @@ jobs:
         # RAVENDB_SECURE_TEST_URL + the operator certificate, so the live-server, E2E, and raw
         # HTTPS route tests all exercise the secured (mutual-TLS) path.
         run: dotnet test RavenDB.Mcp.slnx --configuration Release
+
+  npm-wrapper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check launcher syntax
+        run: node --check npm/bin/cli.js
+
+      - name: Check platform map matches the launcher's optional dependencies
+        run: node npm/scripts/build-platform-packages.mjs --self-check
+
+      - name: Validate the launcher package
+        working-directory: npm
+        run: npm pack --dry-run
