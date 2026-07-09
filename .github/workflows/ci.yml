@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        security: [unsecured, secured]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Start RavenDB
+        if: matrix.security == 'unsecured'
+        run: |
+          docker run --rm --detach \
+            --name ravendb-mcp-test \
+            --publish 8070:8080 \
+            --env RAVEN_ServerUrl=http://0.0.0.0:8080 \
+            --env RAVEN_Setup_Mode=None \
+            --env RAVEN_Security_UnsecuredAccessAllowed=PublicNetwork \
+            --env RAVEN_License_Eula_Accepted=true \
+            ravendb/ravendb:7.2-latest
+
+      - name: Wait for RavenDB
+        if: matrix.security == 'unsecured'
+        run: |
+          for i in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8070/setup/alive > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Generate secured RavenDB certificates
+        if: matrix.security == 'secured'
+        run: |
+          mkdir certs
+          openssl genrsa -out certs/ca.key 2048
+          openssl req -new -x509 -key certs/ca.key -out certs/ca.crt -subj "/C=US/ST=Arizona/L=Nevada/O=RavenDB Test CA/OU=RavenDB test CA/CN=localhost/emailAddress=ravendbca@example.com" -addext "basicConstraints = critical, CA:TRUE" -addext "keyUsage = critical, digitalSignature, keyCertSign"
+
+          openssl genrsa -out certs/localhost.key 2048
+          openssl req -new -key certs/localhost.key -out certs/localhost.csr -subj "/C=US/ST=Arizona/L=Nevada/O=RavenDB Test/OU=RavenDB test/CN=localhost/emailAddress=ravendb@example.com" -addext "subjectAltName = DNS:localhost"
+          openssl x509 -req -extensions ext -extfile cert/test_cert.conf -in certs/localhost.csr -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out certs/localhost.crt
+          openssl pkcs12 -passout pass:"ravendb-mcp-test" -export -out certs/server.pfx -inkey certs/localhost.key -in certs/localhost.crt -certfile certs/ca.crt
+
+          openssl genrsa -out certs/operator.key 2048
+          openssl req -new -key certs/operator.key -out certs/operator.csr -subj "/C=US/ST=Arizona/L=Nevada/O=RavenDB MCP/OU=RavenDB MCP/CN=ravendb-mcp-operator/emailAddress=ravendb@example.com" -addext "subjectAltName = DNS:localhost"
+          openssl x509 -req -extensions ext -extfile cert/test_cert.conf -in certs/operator.csr -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out certs/operator.crt
+          openssl pkcs12 -passout pass:"ravendb-mcp-test" -export -out certs/operator.pfx -inkey certs/operator.key -in certs/operator.crt -certfile certs/ca.crt
+
+          chmod -R a+rX certs
+
+          sudo cp certs/ca.crt /usr/local/share/ca-certificates/ca.crt
+          sudo update-ca-certificates
+
+          admin_thumbprint=$(openssl x509 -in certs/localhost.crt -noout -fingerprint -sha1 | cut -d= -f2 | tr -d :)
+
+          echo "RAVENDB_SECURE_TEST_URL=https://localhost:8443/" >> "$GITHUB_ENV"
+          echo "RAVENDB_SECURE_ADMIN_CERTIFICATE_PATH=$PWD/certs/server.pfx" >> "$GITHUB_ENV"
+          echo "RAVENDB_SECURE_ADMIN_CERTIFICATE_PASSWORD=ravendb-mcp-test" >> "$GITHUB_ENV"
+          echo "RAVENDB_SECURE_OPERATOR_CERTIFICATE_PATH=$PWD/certs/operator.pfx" >> "$GITHUB_ENV"
+          echo "RAVENDB_SECURE_OPERATOR_CERTIFICATE_PASSWORD=ravendb-mcp-test" >> "$GITHUB_ENV"
+          echo "RAVENDB_SECURE_ADMIN_THUMBPRINT=$admin_thumbprint" >> "$GITHUB_ENV"
+
+      - name: Start secured RavenDB
+        if: matrix.security == 'secured'
+        run: |
+          # The node listens on the SAME port it publishes (8443) so its self-referential cluster
+          # calls (e.g. bringing a newly-created database online) reach PublicServerUrl. Listening
+          # on 443 while advertising :8443 makes those self-calls hit a closed port -> raft commands
+          # like CreateDatabase fail with "database created but not accessible / Connection refused".
+          docker run --rm --detach \
+            --name ravendb-mcp-secure-test \
+            --publish 8443:8443 \
+            --volume "$PWD/certs:/certs" \
+            --env RAVEN_ServerUrl=https://0.0.0.0:8443 \
+            --env RAVEN_PublicServerUrl=https://localhost:8443 \
+            --env RAVEN_Setup_Mode=None \
+            --env RAVEN_Security_Certificate_Path=/certs/server.pfx \
+            --env RAVEN_Security_Certificate_Password=ravendb-mcp-test \
+            --env RAVEN_Security_WellKnownCertificates_Admin="$RAVENDB_SECURE_ADMIN_THUMBPRINT" \
+            --env RAVEN_License_Eula_Accepted=true \
+            ravendb/ravendb:7.2-latest
+
+      - name: Wait for secured RavenDB
+        if: matrix.security == 'secured'
+        run: |
+          for i in {1..90}; do
+            if curl --fail --silent https://localhost:8443/setup/alive > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs ravendb-mcp-secure-test
+          exit 1
+
+      - name: Test unsecured
+        if: matrix.security == 'unsecured'
+        run: dotnet test RavenDB.Mcp.slnx --configuration Release
+        env:
+          RAVENDB_TEST_URL: http://127.0.0.1:8070/
+
+      - name: Test secured
+        if: matrix.security == 'secured'
+        # Run the FULL suite against the certificate-secured server. RavenDbTestFixture picks up
+        # RAVENDB_SECURE_TEST_URL + the operator certificate, so the live-server, E2E, and raw
+        # HTTPS route tests all exercise the secured (mutual-TLS) path.
+        run: dotnet test RavenDB.Mcp.slnx --configuration Release
+
+  npm-wrapper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check launcher syntax
+        run: node --check npm/bin/cli.js
+
+      - name: Check platform map matches the launcher's optional dependencies
+        run: node npm/scripts/build-platform-packages.mjs --self-check
+
+      - name: Run launcher + generator tests
+        run: node --test npm/test/generator.test.mjs npm/test/launcher.test.mjs
+
+      - name: Validate the launcher package
+        working-directory: npm
+        run: npm pack --dry-run

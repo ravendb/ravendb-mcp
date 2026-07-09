@@ -1,0 +1,52 @@
+name: "3. Publish npm"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Build binaries
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($rid in @('win-x64', 'win-arm64', 'linux-x64', 'osx-x64', 'osx-arm64')) {
+            dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r $rid --self-contained true -p:PublishSingleFile=true -o "artifacts/publish/$rid"
+          }
+
+      - name: Stage packages
+        run: node npm/scripts/build-platform-packages.mjs --version "$(node -p "require('./npm/package.json').version")" --publish-dir artifacts/publish --out npm/dist
+
+      - name: Publish
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          publish() {
+            local dir="$1" name ver
+            name=$(node -p "require('./$dir/package.json').name")
+            ver=$(node -p "require('./$dir/package.json').version")
+            if npm view "$name@$ver" version >/dev/null 2>&1; then
+              echo "skip $name@$ver (already published)"
+            else
+              npm publish "$dir" --access public --provenance
+            fi
+          }
+          for d in npm/dist/@ravendb/mcp-*; do publish "$d"; done
+          publish npm/dist/@ravendb/mcp

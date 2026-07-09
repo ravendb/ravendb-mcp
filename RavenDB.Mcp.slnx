@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RavenDB.Mcp/RavenDB.Mcp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RavenDB.Mcp.Tests/RavenDB.Mcp.Tests.csproj" />
+  </Folder>
+</Solution>

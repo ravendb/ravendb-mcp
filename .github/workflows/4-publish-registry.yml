@@ -1,0 +1,24 @@
+name: "4. Publish MCP Registry"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+jobs:
+  registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Run last: the registry validates that the NuGet and npm packages already exist and are indexed.
+      - name: Publish
+        run: |
+          set -euo pipefail
+          url=$(curl -s https://api.github.com/repos/modelcontextprotocol/registry/releases/latest | jq -r '.assets[] | select(.name | test("linux_amd64")) | .browser_download_url' | head -1)
+          curl -L "$url" -o mcp-publisher.tar.gz
+          tar -xzf mcp-publisher.tar.gz mcp-publisher
+          cp .mcp/server.json ./server.json
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
