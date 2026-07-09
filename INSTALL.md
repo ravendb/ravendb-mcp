@@ -6,13 +6,6 @@ can inspect cluster / database / index / task / storage / performance state, log
 packages, and read-only data — without hand-writing client code, opening Studio, or hitting the
 raw REST API.
 
-> **Pre-release note.** This package is **not published to NuGet or npm yet**. For now you build it
-> from this repository (the [From source](#install-options) options below). The registry-based
-> options ([`dnx`](#option-d-nuget-via-dnx-once-published),
-> [global tool](#option-e-global-tool-from-nuget-once-published),
-> [`npx`](#option-f--npm-via-npx-once-published)) are documented for completeness but only work
-> **once the package is published**.
-
 ---
 
 ## Table of contents
@@ -20,12 +13,12 @@ raw REST API.
 - [Prerequisites](#prerequisites)
 - [Quick start (Claude Code)](#quick-start-claude-code)
 - [Install options](#install-options)
-  - [Option A — Self-contained executable (recommended, pre-release)](#option-a--self-contained-executable-recommended-pre-release)
+  - [Option A — Self-contained executable](#option-a--self-contained-executable)
   - [Option B — Global .NET tool from a locally-built package](#option-b--global-net-tool-from-a-locally-built-package)
   - [Option C — Run from source (`dotnet run`)](#option-c--run-from-source-dotnet-run)
-  - [Option D — NuGet via `dnx` (once published)](#option-d--nuget-via-dnx-once-published)
-  - [Option E — Global tool from NuGet (once published)](#option-e--global-tool-from-nuget-once-published)
-  - [Option F — npm via `npx` (once published)](#option-f--npm-via-npx-once-published)
+  - [Option D — NuGet via `dnx`](#option-d--nuget-via-dnx)
+  - [Option E — Global tool from NuGet](#option-e--global-tool-from-nuget)
+  - [Option F — npm via `npx`](#option-f--npm-via-npx)
 - [Connecting it to a client](#connecting-it-to-a-client)
   - [Claude Code](#claude-code)
   - [Claude Desktop](#claude-desktop)
@@ -48,8 +41,8 @@ raw REST API.
 
 | You need | For |
 | --- | --- |
-| **.NET 10 SDK** | Building from source (every pre-release option). Download from <https://dotnet.microsoft.com>. |
-| **Node.js 18+** | Only for the [`npx`](#option-f--npm-via-npx-once-published) install path (once published). |
+| **.NET 10 SDK** | For `dnx`, the global tool, or building from source. Download from <https://dotnet.microsoft.com>. |
+| **Node.js 18+** | For the [`npx`](#option-f--npm-via-npx) install path. |
 | **Claude Code CLI** (`claude`) | Registering and running the server. |
 | **git** | Cloning the repository. |
 | **Network access** to your RavenDB cluster | The server connects out to the URL(s) you configure. |
@@ -62,33 +55,30 @@ Docker is **not** required to run the server (it's only used for test fixtures).
 ## Quick start (Claude Code)
 
 ```powershell
-# 1. Clone
-git clone https://github.com/ravendb/ravendb-mcp.git
-cd ravendb-mcp
-
-# 2. Build a standalone executable (pick your OS RID — see Option A)
-dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/win-x64
-
-# 3. Register it with Claude Code (plain-HTTP cluster, minimal)
-claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- "<repo>\dist\win-x64\ravendb-mcp.exe"
-
-# 4. Verify
+claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- npx -y @ravendb/mcp
 claude mcp list
 ```
 
-Replace `<repo>` with the absolute path to your clone and `RAVENDB_URLS` with your cluster.
-For a **secured** cluster, add the certificate env vars from
+`npx` fetches the self-contained binary for your platform — no .NET required. Replace `RAVENDB_URLS`
+with your cluster; for a **secured** cluster add the certificate env vars from
 [Secured servers](#secured-servers--certificates). Then open a Claude Code session and run `/mcp`
 (or just ask *"list my RavenDB databases"*).
+
+Prefer a .NET workflow, a plain binary, or building from source? See [Install options](#install-options).
 
 ---
 
 ## Install options
 
-All pre-release options build from this checkout. **Option A** is recommended: a single standalone
-binary, no .NET runtime needed at run time, and no build output leaking onto the stdio stream.
+Most users pick one of:
 
-### Option A — Self-contained executable (recommended, pre-release)
+- **`npx`** ([Option F](#option-f--npm-via-npx)) — one line, needs only Node.js.
+- **`dnx`** ([Option D](#option-d--nuget-via-dnx)) — one line, needs the .NET 10 SDK.
+- **A prebuilt binary** from the [Releases](https://github.com/ravendb/ravendb-mcp/releases) page — no runtime at all: download, unzip, and point your client at it.
+
+Options A–C below build from this checkout and are for developing the server itself.
+
+### Option A — Self-contained executable
 
 ```powershell
 git clone https://github.com/ravendb/ravendb-mcp.git
@@ -145,7 +135,7 @@ dotnet run --project src/RavenDB.Mcp -- --config C:\tools\ravendb-mcp\ravendb-mc
 > which corrupts the JSON-RPC handshake. If you wire this into a client, **build first**
 > (`dotnet build -c Release`) or prefer **Option A**.
 
-### Option D — NuGet via `dnx` (once published)
+### Option D — NuGet via `dnx`
 
 When the package is on NuGet.org, MCP clients can acquire and launch it in one shot with the
 .NET 10 `dnx` runner — no separate install step:
@@ -158,7 +148,7 @@ When the package is on NuGet.org, MCP clients can acquire and launch it in one s
 }
 ```
 
-### Option E — Global tool from NuGet (once published)
+### Option E — Global tool from NuGet
 
 ```powershell
 dotnet tool install --global RavenDB.Mcp
@@ -171,7 +161,7 @@ dotnet tool install --global RavenDB.Mcp
 }
 ```
 
-### Option F — npm via `npx` (once published)
+### Option F — npm via `npx`
 
 When the package is on npm, MCP clients can acquire and launch it with `npx`. The `@ravendb/mcp`
 launcher downloads the self-contained native binary for the current OS/arch (shipped as a
@@ -198,9 +188,9 @@ Supported platforms: Windows (x64, arm64), macOS (x64, arm64), Linux (x64).
 
 ## Connecting it to a client
 
-Whichever install option you used, you end up pointing the client at either a **binary path**
-(Option A), the **`ravendb-mcp`** command (Options B/E), or **`dnx`** (Option D). Configuration is
-always passed the same way: environment variables or a `--config` file (see
+Whichever install option you used, you end up pointing the client at **`npx`** (Option F), **`dnx`**
+(Option D), the **`ravendb-mcp`** command (Options B/E), or a **binary path** (Option A).
+Configuration is always passed the same way: environment variables or a `--config` file (see
 [Configuration reference](#configuration-reference)).
 
 ### Claude Code
@@ -436,7 +426,7 @@ plaintext on disk, but a single file you control) or a certificate without a pas
 
 **Which RID do I pick for Option A?**
 Match the machine that runs Claude: Windows x64 → `win-x64`, Apple Silicon → `osx-arm64`, etc. See
-the table under [Option A](#option-a--self-contained-executable-recommended-pre-release).
+the table under [Option A](#option-a--self-contained-executable).
 
 **Can I use a config file instead of environment variables?**
 Yes — pass `--config <path>` as a server argument. It overrides any env vars.
@@ -445,6 +435,7 @@ Yes — pass `--config <path>` as a server argument. It overrides any env vars.
 21 read-only tools. Most are *facet* tools that take selectors and return only the requested
 sections, which keeps the tool list small and the responses scoped.
 
-**Is it published to NuGet or npm yet?**
-Not yet. Until it is, use the from-source options (A/B/C). The `dnx`, NuGet global-tool, and `npx`
-options are documented for when it ships.
+**Where is it published?**
+NuGet as `RavenDB.Mcp` (use it with `dnx` or as a global tool) and npm as `@ravendb/mcp` (use it
+with `npx`). Prebuilt self-contained binaries are attached to each GitHub release. You can also
+build from source — see the [install options](#install-options).

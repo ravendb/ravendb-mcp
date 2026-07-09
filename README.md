@@ -4,17 +4,15 @@ A local, read-only [MCP](https://modelcontextprotocol.io) diagnostics server for
 
 ## Quick start
 
-Build a self-contained executable (no .NET needed at run time) and register it with Claude Code:
+Run it with `npx` (needs only Node.js — the launcher fetches the self-contained binary, so no .NET is required) and register it with Claude Code:
 
 ```powershell
-git clone https://github.com/ravendb/ravendb-mcp.git; cd ravendb-mcp
-dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/win-x64
-claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- "$PWD\dist\win-x64\ravendb-mcp.exe"
+claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- npx -y @ravendb/mcp
 ```
 
 Then ask the agent *“list my RavenDB databases.”*
 
-Prefer npm? Once published, `npx -y @ravendb/mcp` runs it with no .NET installed — see [Option F](INSTALL.md#option-f--npm-via-npx-once-published).
+On the .NET stack, `dnx RavenDB.Mcp` works too; for no runtime at all, grab a prebuilt binary from the [Releases](https://github.com/ravendb/ravendb-mcp/releases) page. Other OSes, secured (HTTPS + certificate) clusters, VS Code / Claude Desktop wiring, the full configuration reference, and troubleshooting are in **[INSTALL.md](INSTALL.md)**.
 
 Other OSes, secured (HTTPS + certificate) clusters, VS Code / Claude Desktop wiring, the full configuration reference, and troubleshooting are in **[INSTALL.md](INSTALL.md)**.
 
