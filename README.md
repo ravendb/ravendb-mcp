@@ -4,17 +4,21 @@ A local, read-only [MCP](https://modelcontextprotocol.io) diagnostics server for
 
 ## Quick start
 
-Run it with `npx` (needs only Node.js — the launcher fetches the self-contained binary, so no .NET is required) and register it with Claude Code:
+Run it with **npx** — only Node.js needed; the launcher fetches the self-contained binary, so no .NET is required:
 
 ```powershell
 claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- npx -y @ravendb/mcp
 ```
 
-Then ask the agent *“list my RavenDB databases.”*
+Or with **dnx** (.NET 10 SDK):
 
-On the .NET stack, `dnx RavenDB.Mcp` works too; for no runtime at all, grab a prebuilt binary from the [Releases](https://github.com/ravendb/ravendb-mcp/releases) page. Other OSes, secured (HTTPS + certificate) clusters, VS Code / Claude Desktop wiring, the full configuration reference, and troubleshooting are in **[INSTALL.md](INSTALL.md)**.
+```powershell
+claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- dnx RavenDB.Mcp --yes
+```
 
-Other OSes, secured (HTTPS + certificate) clusters, VS Code / Claude Desktop wiring, the full configuration reference, and troubleshooting are in **[INSTALL.md](INSTALL.md)**.
+Alternatively, download a self-contained executable from the [Releases](https://github.com/ravendb/ravendb-mcp/releases) page — no runtime required — and point your client at it.
+
+Then ask the agent *“list my RavenDB databases.”* Other OSes, secured (HTTPS + certificate) clusters, VS Code / Claude Desktop wiring, and the full configuration reference are in **[INSTALL.md](INSTALL.md)**.
 
 ## Configuration
 
@@ -35,19 +39,14 @@ To work with several clusters, register the server more than once under differen
 - **Facets:** `get_cluster_overview`, `get_server_config`, `get_server_resources`, `get_network_details`, `get_database_stats`, `get_database_config`, `get_index`, `get_tasks`, `get_live_workload`, `inspect_storage`, `get_document_data`, `sample_live_feed`, `wait_for_completion`, `collect_debug_package`, `get_ai_agents`
 - **Singletons:** `list_databases`, `get_database_record`, `get_notifications`, `run_query`, `list_compare_exchange`, `export_server_logs`
 
-Tools that produce large or binary output (logs, debug packages) write a file and return a reference — `{ path, contentType, bytes }` — instead of flooding the context.
+Oversized diagnostics return a light overview by default with a documented way to drill in, and tools that produce large or binary output (logs, debug packages) write a file and return a reference — `{ path, contentType, bytes }` — so results stay within the model's context window.
+
+The server also publishes **`rql://` documentation resources** (version-aware, starting at `rql://index`), and `run_query` surfaces parse errors that point back at them — so the agent writes correct RQL for your server version instead of guessing.
 
 ## Safety
 
 Read-only by design: there are no write or delete tools, and tools carry MCP read-only annotations. Connection-string secrets (passwords, API keys, cloud credentials, SAS tokens) are masked as `***redacted***` at the database-record boundary, so they never leak through `get_database_record` or any tool projecting it. What the agent can see is ultimately bounded by the configured certificate's RavenDB permissions — an **Operator** certificate is the recommended clearance.
 
-## Build & test
+## License
 
-```powershell
-dotnet build RavenDB.Mcp.slnx -c Release
-./scripts/start-ravendb-test-container.ps1 -Port 8070 -Name ravendb-mcp-test   # local RavenDB for tests
-$env:RAVENDB_TEST_URL = "http://127.0.0.1:8070/"
-dotnet test RavenDB.Mcp.slnx -c Release
-```
-
-CI runs the suite against both unsecured and secured (certificate) RavenDB. Release artifacts — self-contained executables, the NuGet `McpServer` package, and the npm packages (`@ravendb/mcp`) — are produced by the manually-dispatched workflows in `.github/workflows/` (build & GitHub release, then NuGet, npm, and MCP Registry); the underlying build commands are in [INSTALL.md](INSTALL.md).
+MIT — see [LICENSE](LICENSE). Building from source is covered in [INSTALL.md](INSTALL.md).
