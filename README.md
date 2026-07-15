@@ -67,3 +67,7 @@ Large or binary output (logs, debug packages) is written to a file and returned 
 ## License
 
 MIT. See [LICENSE](LICENSE). Building from source is covered in [INSTALL.md](INSTALL.md).
+
+---
+
+mcp-name: io.github.ravendb/ravendb-mcp
