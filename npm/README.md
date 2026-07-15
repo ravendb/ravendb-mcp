@@ -26,7 +26,3 @@ clusters, client certificates, the `--config` file, and the full configuration r
 ## Supported platforms
 
 Windows (x64, arm64), macOS (x64, arm64), Linux (x64).
-
----
-
-mcp-name: io.github.ravendb/ravendb-mcp
