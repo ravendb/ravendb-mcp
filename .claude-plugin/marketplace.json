@@ -1,0 +1,15 @@
+{
+  "name": "ravendb",
+  "owner": {
+    "name": "RavenDB",
+    "url": "https://github.com/ravendb"
+  },
+  "plugins": [
+    {
+      "name": "ravendb-mcp",
+      "source": "./",
+      "description": "Read-only MCP diagnostics server for RavenDB: inspect cluster, database, index, query, task, storage, and performance state across 21 read-only tools.",
+      "category": "database"
+    }
+  ]
+}

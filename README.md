@@ -20,6 +20,44 @@ Or download a prebuilt executable from the [Releases](https://github.com/ravendb
 
 Then ask the agent *“list my RavenDB databases.”* Other OSes, secured (HTTPS + certificate) clusters, VS Code / Claude Desktop wiring, and the full configuration reference are in **[INSTALL.md](INSTALL.md)**.
 
+## Add to your client
+
+**Cursor** — one click:
+
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=ravendb&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkByYXZlbmRiL21jcCJdLCJlbnYiOnsiUkFWRU5EQl9VUkxTIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIn19)
+
+or add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "ravendb": {
+      "command": "npx",
+      "args": ["-y", "@ravendb/mcp"],
+      "env": { "RAVENDB_URLS": "http://localhost:8080" }
+    }
+  }
+}
+```
+
+**Codex** — add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.ravendb]
+command = "npx"
+args = ["-y", "@ravendb/mcp"]
+env = { RAVENDB_URLS = "http://localhost:8080" }
+```
+
+**Claude Code plugin** — install from this repo's marketplace:
+
+```
+/plugin marketplace add ravendb/ravendb-mcp
+/plugin install ravendb-mcp@ravendb
+```
+
+Set `RAVENDB_URLS` to your cluster; add `RAVENDB_CERTIFICATE_PATH` / `_PASSWORD` for secured clusters (see [INSTALL.md](INSTALL.md)).
+
 ## Features
 
 **Developer experience**

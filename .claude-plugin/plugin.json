@@ -1,0 +1,26 @@
+{
+  "name": "ravendb-mcp",
+  "description": "Read-only MCP diagnostics server for RavenDB.",
+  "version": "1.0.2",
+  "author": {
+    "name": "RavenDB"
+  },
+  "homepage": "https://github.com/ravendb/ravendb-mcp",
+  "repository": "https://github.com/ravendb/ravendb-mcp",
+  "license": "MIT",
+  "keywords": [
+    "ravendb",
+    "mcp",
+    "database",
+    "diagnostics"
+  ],
+  "mcpServers": {
+    "ravendb": {
+      "command": "npx",
+      "args": ["-y", "@ravendb/mcp"],
+      "env": {
+        "RAVENDB_URLS": "http://localhost:8080"
+      }
+    }
+  }
+}
