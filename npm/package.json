@@ -2,6 +2,7 @@
   "name": "@ravendb/mcp",
   "version": "1.0.1",
   "description": "Read-only MCP diagnostics server for RavenDB. Run it with npx; no .NET required.",
+  "mcpName": "io.github.ravendb/ravendb-mcp",
   "bin": {
     "ravendb-mcp": "bin/cli.js"
   },
