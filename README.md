@@ -4,21 +4,51 @@ A local, read-only [MCP](https://modelcontextprotocol.io) diagnostics server for
 
 ## Quick start
 
-Run it with **npx**:
+Launch it with **npx** (Node.js), **dnx** (.NET SDK), or a prebuilt binary from [Releases](https://github.com/ravendb/ravendb-mcp/releases), then add it to your client. Set `RAVENDB_URLS` to your cluster; the examples use `http://localhost:8080`.
+
+**Claude Code**
 
 ```powershell
 claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- npx -y @ravendb/mcp
 ```
 
-Or with **dnx**:
+Or install the plugin, which prompts for your cluster URL:
 
-```powershell
-claude mcp add ravendb --scope user --env RAVENDB_URLS=http://localhost:8080 -- dnx RavenDB.Mcp --yes
+```
+/plugin marketplace add ravendb/ravendb-mcp
+/plugin install ravendb-mcp@ravendb
 ```
 
-Or download a prebuilt executable from the [Releases](https://github.com/ravendb/ravendb-mcp/releases) page.
+**Codex**
 
-Then ask the agent *“list my RavenDB databases.”* Other OSes, secured (HTTPS + certificate) clusters, VS Code / Claude Desktop wiring, and the full configuration reference are in **[INSTALL.md](INSTALL.md)**.
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.ravendb]
+command = "npx"
+args = ["-y", "@ravendb/mcp"]
+env = { RAVENDB_URLS = "http://localhost:8080" }
+```
+
+**Cursor**
+
+Click the button (installs with `http://localhost:8080`; edit for another cluster), or add `.cursor/mcp.json`:
+
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=ravendb&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkByYXZlbmRiL21jcCJdLCJlbnYiOnsiUkFWRU5EQl9VUkxTIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIn19)
+
+```json
+{
+  "mcpServers": {
+    "ravendb": {
+      "command": "npx",
+      "args": ["-y", "@ravendb/mcp"],
+      "env": { "RAVENDB_URLS": "http://localhost:8080" }
+    }
+  }
+}
+```
+
+Then ask the agent *“list my RavenDB databases.”* Any of these can use `dnx RavenDB.Mcp --yes` or a binary path in place of `npx -y @ravendb/mcp`. Secured (HTTPS) clusters, other OSes, and the full configuration reference are in **[INSTALL.md](INSTALL.md)**.
 
 ## Features
 

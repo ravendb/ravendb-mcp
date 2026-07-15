@@ -1,0 +1,51 @@
+{
+  "name": "ravendb-mcp",
+  "description": "Read-only MCP diagnostics server for RavenDB.",
+  "version": "1.0.2",
+  "author": {
+    "name": "RavenDB",
+    "url": "https://ravendb.net"
+  },
+  "homepage": "https://ravendb.net",
+  "repository": "https://github.com/ravendb/ravendb-mcp",
+  "license": "MIT",
+  "keywords": [
+    "ravendb",
+    "mcp",
+    "database",
+    "diagnostics"
+  ],
+  "userConfig": {
+    "RAVENDB_URLS": {
+      "type": "string",
+      "title": "RavenDB URL(s)",
+      "description": "Node URLs of your cluster, comma or semicolon separated. Use an https URL for a secured cluster. Example: http://localhost:8080",
+      "required": true,
+      "default": "http://localhost:8080"
+    },
+    "RAVENDB_CERTIFICATE_PATH": {
+      "type": "string",
+      "title": "Client certificate path (.pfx)",
+      "description": "Leave blank for an unsecured (HTTP) cluster. For a secured cluster, the full path to your client .pfx certificate.",
+      "default": ""
+    },
+    "RAVENDB_CERTIFICATE_PASSWORD": {
+      "type": "string",
+      "title": "Certificate password",
+      "description": "Only if your .pfx certificate has a password.",
+      "sensitive": true,
+      "default": ""
+    }
+  },
+  "mcpServers": {
+    "ravendb": {
+      "command": "npx",
+      "args": ["-y", "@ravendb/mcp"],
+      "env": {
+        "RAVENDB_URLS": "${user_config.RAVENDB_URLS}",
+        "RAVENDB_CERTIFICATE_PATH": "${user_config.RAVENDB_CERTIFICATE_PATH}",
+        "RAVENDB_CERTIFICATE_PASSWORD": "${user_config.RAVENDB_CERTIFICATE_PASSWORD}"
+      }
+    }
+  }
+}
