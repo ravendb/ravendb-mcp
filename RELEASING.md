@@ -1,7 +1,8 @@
 # Releasing
 
-1. Bump the version: `node scripts/set-version.mjs <version>` (e.g. `1.0.0`).
-2. Open a PR with the bump and merge it.
-3. From the Actions tab, run the release workflows in order: **Build & GitHub Release → Publish NuGet → Publish npm → Publish MCP Registry**.
-
-Requires the `NUGET_API_KEY` and `NPM_TOKEN` repository secrets.
+1. Bump the version with `node scripts/set-version.mjs <version>`, then open a PR and merge it.
+2. Run the release steps in order:
+   1. Build & GitHub Release
+   2. Publish NuGet
+   3. Publish npm
+   4. Publish MCP Registry

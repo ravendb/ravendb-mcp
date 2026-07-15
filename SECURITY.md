@@ -13,7 +13,13 @@ informed of the resolution.
 RavenDB MCP is a **read-only** diagnostics server:
 
 - No write or delete tools are exposed.
-- Connection-string secrets (passwords, API keys, cloud credentials, SAS tokens) are masked as
-  `***redacted***` before any database record is returned.
-- What the agent can access is ultimately bounded by the RavenDB permissions of the client
-  certificate the server is configured with; an Operator-clearance certificate is recommended.
+- **Redacted.** Connection-string secrets (passwords, cloud access keys, SAS tokens, AI-provider API
+  keys, certificates) are masked as `***redacted***` in the structured JSON the server returns: the
+  database record and everything derived from it (backup / ETL / replication task configs), database
+  and server settings, ongoing-task and AI-agent configs, and the server-wide backup configuration.
+- **Not scrubbed.** Free-text log exports and live feeds (`export_server_logs`, and the `AdminLogs`
+  and `TrafficWatch` sample feeds) and the binary debug packages (`collect_debug_package`) are
+  returned as-is and may contain secrets that structural redaction cannot mask. Treat them as sensitive.
+- Access is bounded by the client certificate's RavenDB permissions. Prefer a least-privilege
+  certificate (per-database Read for the database and query tools); Operator clearance is only needed
+  for the server-wide and cluster-wide diagnostics.

@@ -309,9 +309,10 @@ server at one:
 claude mcp add ravendb --scope user --env RAVENDB_URLS=https://node-a.example.development.run:443 --env RAVENDB_CERTIFICATE_PATH="C:\certs\operator.client.certificate.pfx" --env RAVENDB_CERTIFICATE_PASSWORD=pfxPasswordIfAny -- "<repo>\dist\win-x64\ravendb-mcp.exe"
 ```
 
-- **Use an Operator-clearance certificate.** It grants cluster-wide read access for diagnostics
-  without full Cluster Admin rights, the right level for a read-only diagnostics agent. The
-  certificate's RavenDB permissions are what ultimately bound what the agent can see.
+- **Prefer a least-privilege certificate.** A per-database **Read** certificate covers the database,
+  index, query, and document tools. Use **Operator** clearance only for the server-wide and
+  cluster-wide tools (cluster overview, server config/resources, server logs). The certificate's
+  RavenDB permissions bound what the agent can see.
 - Drop the password env var if your `.pfx` is not password-protected.
 - For **unsecured** (HTTP) clusters, leave both certificate settings unset.
 
@@ -376,7 +377,7 @@ dotnet tool update --global --add-source ./dist/package RavenDB.Mcp
 | Tools never appear after `add` | Open a **new** Claude Code session; user-scope servers load on session start. |
 | `claude mcp add` says the name already exists | `claude mcp remove ravendb` first, then re-add. |
 | Garbage / handshake errors when using `dotnet run` | Build output hit stdout. `dotnet build -c Release` first, or use **Option A**. |
-| Secured cluster rejects the agent | Certificate clearance too low or expired, use an **Operator** cert (or one with read on the target databases). |
+| Secured cluster rejects the agent | Certificate clearance too low or expired. Use a cert with Read on the target databases, or **Operator** for server/cluster-wide tools. |
 | Windows path errors in JSON config | Escape backslashes as `\\`. |
 
 The server logs to **stderr** (stdout is reserved for the JSON-RPC protocol), so client logs are
@@ -406,8 +407,9 @@ Secured = HTTPS + client certificate (set `RAVENDB_CERTIFICATE_PATH`, and passwo
 Unsecured = HTTP, no certificate. The server works with both.
 
 **Which certificate clearance should I use?**
-**Operator** is preferred, cluster-wide read for diagnostics without full Cluster Admin. The
-certificate's RavenDB permissions bound what the agent can see.
+Prefer a least-privilege certificate: a per-database **Read** certificate is enough for the database,
+index, query, and document tools. **Operator** clearance is only needed for the server-wide and
+cluster-wide diagnostics. The certificate's permissions bound what the agent can see.
 
 **Where do exported files go by default?**
 A `ravendb-mcp-artifacts` folder inside the system temp directory. Set `RAVENDB_ARTIFACTS_PATH`

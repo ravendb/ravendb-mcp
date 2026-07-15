@@ -16,8 +16,10 @@ jobs:
       - name: Publish
         run: |
           set -euo pipefail
-          url=$(curl -s https://api.github.com/repos/modelcontextprotocol/registry/releases/latest | jq -r '.assets[] | select(.name | test("linux_amd64")) | .browser_download_url' | head -1)
-          curl -L "$url" -o mcp-publisher.tar.gz
+          version=v1.8.0
+          sha256=1370446bbe74d562608e8005a6ccce02d146a661fbd78674e11cc70b9618d6cf
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/${version}/mcp-publisher_linux_amd64.tar.gz" -o mcp-publisher.tar.gz
+          echo "${sha256}  mcp-publisher.tar.gz" | sha256sum -c -
           tar -xzf mcp-publisher.tar.gz mcp-publisher
           cp .mcp/server.json ./server.json
           ./mcp-publisher login github-oidc

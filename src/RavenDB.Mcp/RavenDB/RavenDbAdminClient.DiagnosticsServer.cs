@@ -259,7 +259,8 @@ public sealed partial class RavenDbAdminClient
             databaseName,
             tasks.Tasks,
             await TryGetDatabaseJson(databaseName, "/admin/debug/periodic-backup/timers", cancellationToken),
-            await TryGetServerJson("/admin/configuration/server-wide/backup", cancellationToken));
+            // Server-wide backup config carries destination cloud credentials; redact like the record path.
+            RedactSecrets(await TryGetServerJson("/admin/configuration/server-wide/backup", cancellationToken)));
     }
 
     // Rolling performance/conflict history is unbounded; omitted from the default bundle and fetched only on request.
