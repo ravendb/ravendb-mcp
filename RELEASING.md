@@ -4,5 +4,5 @@
 2. Run the release steps in order:
    1. Build & GitHub Release
    2. Publish NuGet
-   3. Publish npm
+   3. Publish npm: `node scripts/release-npm.mjs`
    4. Publish MCP Registry
