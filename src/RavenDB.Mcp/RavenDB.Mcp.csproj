@@ -5,6 +5,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Bundle native libraries (e.g. libzstd) into the single-file exe so an exe-only copy (npm) can load them. -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <AssemblyName>ravendb-mcp</AssemblyName>
     <PackageId>RavenDB.Mcp</PackageId>
     <Version>1.0.0</Version>
