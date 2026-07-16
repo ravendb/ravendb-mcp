@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class ServerTools
 {
-    [McpServerTool(Name = "get_cluster_overview", ReadOnly = true)]
+    [McpServerTool(Name = "get_cluster_overview", Title = "Cluster overview", ReadOnly = true)]
     [Description("Cluster and server overview. Sections: Nodes (topology, leader, per-node tag/type/url/health), ServerInfo (build/version + contacted node), ServerDiagnostics (light: metrics/cpu-credits/idle DBs/license/cluster maintenance), ServerSettings (no settingsPrefix → index of available prefixes+counts; with settingsPrefix → that prefix's settings), ServerRoutes (all HTTP routes — large), ClusterDiagnostics (light: observer decisions, remote connections, engine logs, state changes), ClusterLog (raft log — large), ClusterHistory (cluster history — large). Choose with include; default is Nodes + ServerInfo. Request the large sections on their own. For alerts/hints use get_notifications.")]
     public static async Task<Dictionary<string, object?>> GetClusterOverview(
         RavenDbAdminClient client,
@@ -31,7 +31,7 @@ public static class ServerTools
         return result;
     }
 
-    [McpServerTool(Name = "get_notifications", ReadOnly = true)]
+    [McpServerTool(Name = "get_notifications", Title = "Notifications", ReadOnly = true)]
     [Description("Active RavenDB notifications — alerts, performance hints, and operation/error notices. Omit databaseName for server-wide notifications; pass it to scope to one database. Returns the raw notification list (group/categorize client-side as needed).")]
     public static Task<GetNotificationsResult> GetNotifications(
         RavenDbAdminClient client,
@@ -41,7 +41,7 @@ public static class ServerTools
         return client.GetNotifications(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_server_config", ReadOnly = true)]
+    [McpServerTool(Name = "get_server_config", Title = "Server configuration", ReadOnly = true)]
     [Description("Server-scoped configuration. Sections: Logs (mode/levels/paths/retention), ClientConfig (server-wide client config pushed to all clients), TrafficWatch (capture configuration), Studio (environment banner, disabled UI features). Choose with include; default is all. For per-database configuration use get_database_config.")]
     public static async Task<Dictionary<string, object?>> GetServerConfig(
         RavenDbAdminClient client,

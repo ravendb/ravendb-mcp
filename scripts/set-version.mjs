@@ -1,7 +1,7 @@
 // Sets the release version across every manifest the release check enforces.
 // Usage: node scripts/set-version.mjs 1.0.0
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 const next = process.argv[2];
 if (!next || !/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(next)) {
@@ -26,10 +26,15 @@ const edits = [
   ['.mcp/server.json', new RegExp(`"${cur}"`, 'g'), `"${next}"`],
   ['npm/package.json', new RegExp(`"${cur}"`, 'g'), `"${next}"`],
   ['INSTALL.md', new RegExp(`(RavenDB\\.Mcp@)${cur}`, 'g'), `$1${next}`],
+  ['mcpb/manifest.json', new RegExp(`"${cur}"`, 'g'), `"${next}"`],
 ];
 
 let total = 0;
 for (const [path, re, repl] of edits) {
+  if (!existsSync(path)) {
+    console.log(`  ${path}: not present, skipped`);
+    continue;
+  }
   const before = readFileSync(path, 'utf8');
   const count = (before.match(re) || []).length;
   if (count > 0) writeFileSync(path, before.replace(re, repl));

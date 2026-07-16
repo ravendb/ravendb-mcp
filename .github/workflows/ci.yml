@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
 
+# Least privilege: CI only reads the repo. No job writes contents, publishes packages, or
+# comments on PRs, so the default GITHUB_TOKEN is scoped down to read-only.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -139,3 +144,53 @@ jobs:
       - name: Validate the launcher package
         working-directory: npm
         run: npm pack --dry-run
+
+  mcpb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Manifest and launcher checks
+        run: |
+          node --check mcpb/server/cli.js
+          node -e "JSON.parse(require('fs').readFileSync('mcpb/manifest.json','utf8'))"
+
+      - name: Start RavenDB
+        run: |
+          docker run --rm --detach \
+            --name ravendb-mcpb-test \
+            --publish 8080:8080 \
+            --env RAVEN_ServerUrl=http://0.0.0.0:8080 \
+            --env RAVEN_PublicServerUrl=http://localhost:8080 \
+            --env RAVEN_Setup_Mode=None \
+            --env RAVEN_Security_UnsecuredAccessAllowed=PublicNetwork \
+            --env RAVEN_License_Eula_Accepted=true \
+            ravendb/ravendb:7.2-latest
+          for i in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8080/setup/alive > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Build the linux-x64 binary into the bundle layout
+        run: dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o mcpb/server/bin/linux-x64
+
+      - name: Strip the exec bit to verify the launcher restores it (a zip may not preserve it)
+        run: chmod -x mcpb/server/bin/linux-x64/ravendb-mcp
+
+      - name: Install smoke-test dependencies
+        working-directory: mcpb/test
+        run: npm install
+
+      - name: MCPB launcher smoke test (Linux)
+        run: node mcpb/test/e2e-smoke.mjs
+        env:
+          RAVENDB_URLS: http://localhost:8080

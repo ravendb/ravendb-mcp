@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class StoragePerformanceTools
 {
-    [McpServerTool(Name = "inspect_storage", ReadOnly = true)]
+    [McpServerTool(Name = "inspect_storage", Title = "Storage internals", ReadOnly = true)]
     [Description("Storage internals deep-dive for a database. Sections: Trees (Voron tree listing), Environment (one environment's report + scratch buffers + free space; defaults to the Documents environment — set environmentName/environmentType for Index/Configuration/System), CompressionDictionaries. Choose with include; default is Trees + Environment. For high-level sizes use get_database_stats with the storage section.")]
     public static async Task<Dictionary<string, object?>> InspectStorage(
         RavenDbAdminClient client,
@@ -31,7 +31,7 @@ public static class StoragePerformanceTools
         return result;
     }
 
-    [McpServerTool(Name = "get_server_resources", ReadOnly = true)]
+    [McpServerTool(Name = "get_server_resources", Title = "Server resources", ReadOnly = true)]
     [Description("Host/runtime resource snapshot. Sections: Metrics, Cpu, Io, Gc, Memory (includes threads), Process, LowMemoryLog, EncryptionBufferPool, StackTraces, ScriptRunners. Choose with include; default is the core set (Metrics, Cpu, Io, Gc, Memory, Process). Use for host-health and runtime investigation.")]
     public static async Task<Dictionary<string, object?>> GetServerResources(
         RavenDbAdminClient client,
@@ -57,7 +57,7 @@ public static class StoragePerformanceTools
         return result;
     }
 
-    [McpServerTool(Name = "get_network_details", ReadOnly = true)]
+    [McpServerTool(Name = "get_network_details", Title = "Network details", ReadOnly = true)]
     [Description("TCP/network details: Stats (server connection counts + bytes), Connections (active TCP connections — server-wide, or per database when databaseName is given), DatabaseInfo (endpoint a client/node uses to reach a database on a node — needs databaseName + nodeTag). Choose sections with include; default is Stats + Connections.")]
     public static async Task<Dictionary<string, object?>> GetNetworkDetails(
         RavenDbAdminClient client,

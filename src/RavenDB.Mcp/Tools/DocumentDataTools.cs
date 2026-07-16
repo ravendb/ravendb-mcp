@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DocumentDataTools
 {
-    [McpServerTool(Name = "get_document_data", ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = true)]
+    [McpServerTool(Name = "get_document_data", Title = "Document data", ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = true)]
     [Description("Everything about ONE document by id. Sections: Document (body + @metadata; Found=false when absent), Counters, Attachments (names/sizes/hashes), TimeSeries (requires timeSeriesName, optional from/to), Revisions, Conflicts. Choose with include; default is Document. Returns real document data.")]
     public static async Task<Dictionary<string, object?>> GetDocumentData(
         RavenDbAdminClient client,
@@ -55,7 +55,7 @@ public static class DocumentDataTools
         return result;
     }
 
-    [McpServerTool(Name = "run_query", ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = true)]
+    [McpServerTool(Name = "run_query", Title = "Run query", ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = true)]
     [Description("Read-only RQL (no UPDATE/patch; page start/pageSize 1-128). Features | where: and or not in all-in between startsWith endsWith exists regex search boost fuzzy proximity exact lucene intersect cmpxchg id | order: cast score random custom | select: distinct projection js declare load | group: count sum key array | include: counters timeseries revisions highlight | spatial facet suggest morelikethis vector.search. Names only; for syntax read rql://index then the feature resource — don't write RQL from memory.")]
     public static Task<RunQueryResult> RunQuery(
         RavenDbAdminClient client,
@@ -70,7 +70,7 @@ public static class DocumentDataTools
         return client.RunQuery(databaseName, query, start, pageSize, parameters, metadata, cancellationToken);
     }
 
-    [McpServerTool(Name = "list_compare_exchange", ReadOnly = true)]
+    [McpServerTool(Name = "list_compare_exchange", Title = "Compare-exchange entries", ReadOnly = true)]
     [Description("List cluster-wide compare-exchange (cmpxchg) key/value entries — used for atomic guards, unique constraints, and cluster-transaction state. Optional startsWith key prefix; paged (1-1024, default 100). Not document-scoped.")]
     public static Task<JsonElement> ListCompareExchange(
         RavenDbAdminClient client,

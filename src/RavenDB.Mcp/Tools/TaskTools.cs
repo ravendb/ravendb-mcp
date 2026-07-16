@@ -10,7 +10,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class TaskTools
 {
-    [McpServerTool(Name = "get_tasks", ReadOnly = true)]
+    [McpServerTool(Name = "get_tasks", Title = "Ongoing tasks", ReadOnly = true)]
     [Description("Ongoing tasks for a database. Default (no taskId/subscriptionName/diagnostics) lists all tasks: backups, ETL, replication, subscriptions. Provide taskId (+taskType) for one task's runtime info; subscriptionName for a subscription's processing state; set includeDiagnostics (+taskType) for deep diagnostics of that family (Backup / *Etl / Subscription / Replication). The diagnostics bundle omits rolling performance history (and replication conflicts) by default — set includePerformance to include those large axes.")]
     public static async Task<Dictionary<string, object?>> GetTasks(
         RavenDbAdminClient client,
