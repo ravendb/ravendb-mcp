@@ -1,0 +1,7 @@
+{
+  "name": "ravendb-mcp-mcpb-smoke-test",
+  "private": true,
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
