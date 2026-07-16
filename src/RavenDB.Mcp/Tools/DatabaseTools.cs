@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DatabaseTools
 {
-    [McpServerTool(Name = "list_databases", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "list_databases", Title = "List databases", ReadOnly = true, UseStructuredContent = true)]
     [Description("List all database names in the cluster. Call first to discover targets.")]
     public static Task<ListDatabasesResult> ListDatabases(
         RavenDbAdminClient client,
@@ -17,7 +17,7 @@ public static class DatabaseTools
         return client.ListDatabases(cancellationToken);
     }
 
-    [McpServerTool(Name = "get_database_record", ReadOnly = true)]
+    [McpServerTool(Name = "get_database_record", Title = "Database record", ReadOnly = true)]
     [Description("Database record: topology, ongoing tasks (backup/replication/ETL/subscriptions), settings, and feature configuration. Index definitions and history are reduced to name+count (they dominate the raw record) — use get_index for one index's full definition/staleness/history.")]
     public static Task<GetDatabaseRecordResult> GetDatabaseRecord(
         RavenDbAdminClient client,
@@ -27,7 +27,7 @@ public static class DatabaseTools
         return client.GetDatabaseRecord(databaseName, cancellationToken);
     }
 
-    [McpServerTool(Name = "get_database_stats", ReadOnly = true)]
+    [McpServerTool(Name = "get_database_stats", Title = "Database statistics", ReadOnly = true)]
     [Description("Per-database statistics and state. Sections: Summary, Detailed, Collections, Indexing, IndexErrors, Storage, Tombstones, Metrics, Identities, Revisions, Sharding, HugeDocuments, Io. Choose with include; default is Summary + Collections + Indexing. For one index's deep performance/debug use get_index; for one storage environment's deep report use inspect_storage. Tombstones/Metrics/Sharding are availability-wrapped (e.g. Sharding only on sharded databases).")]
     public static async Task<Dictionary<string, object?>> GetDatabaseStats(
         RavenDbAdminClient client,
@@ -75,7 +75,7 @@ public static class DatabaseTools
         (DatabaseConfigSection.SchemaValidation, "SchemaValidation", "schemaValidation")
     ];
 
-    [McpServerTool(Name = "get_database_config", ReadOnly = true)]
+    [McpServerTool(Name = "get_database_config", Title = "Database configuration", ReadOnly = true)]
     [Description("Configuration of one database. Sections: Settings (effective config keys), ClientConfig (client config pushed to clients), Studio, and feature toggles/policies Expiration, Refresh, DataArchival, Revisions, DocumentsCompression, TimeSeries, SchemaValidation. Choose with include; default is all. Feature sections are projected from the database record; null means not configured.")]
     public static async Task<Dictionary<string, object?>> GetDatabaseConfig(
         RavenDbAdminClient client,
