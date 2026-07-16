@@ -32,6 +32,7 @@ const stage = join(repoRoot, 'artifacts/mcpb');
 rmSync(stage, { recursive: true, force: true });
 mkdirSync(join(stage, 'server'), { recursive: true });
 copyFileSync(join(repoRoot, 'mcpb/manifest.json'), join(stage, 'manifest.json'));
+copyFileSync(join(repoRoot, 'mcpb/icon.png'), join(stage, 'icon.png'));
 copyFileSync(join(repoRoot, 'mcpb/server/cli.js'), join(stage, 'server/cli.js'));
 for (const rid of RIDS) {
   const src = join(repoRoot, 'artifacts/publish', rid, binName(rid));

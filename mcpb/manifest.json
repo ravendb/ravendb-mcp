@@ -5,6 +5,7 @@
   "version": "1.0.2",
   "description": "Read-only MCP diagnostics server for RavenDB.",
   "long_description": "A local, read-only MCP diagnostics server for RavenDB. Point it at a cluster and your AI agent can inspect cluster, database, index, task, storage, and performance state, plus logs, support packages, and read-only data, across 21 read-only tools. Connection-string secrets are masked in the returned JSON.",
+  "icon": "icon.png",
   "author": {
     "name": "RavenDB",
     "url": "https://ravendb.net"
