@@ -64,6 +64,10 @@ Full configuration reference, including secured clusters and multi-cluster setup
 
 Large or binary output (logs, debug packages) is written to a file and returned as a reference.
 
+## Privacy
+
+RavenDB MCP runs locally and sends **no data** to RavenDB or Anthropic: no telemetry, no analytics. It connects only to the cluster URL(s) you configure (and to npm/NuGet when you install via `npx`/`dnx`), returns results to your local agent, masks connection-string secrets, and writes exports only to a local folder you control. Details in [PRIVACY.md](PRIVACY.md); RavenDB's company policy is at [ravendb.net](https://ravendb.net/legal/website/privacy-policy).
+
 ## License
 
 MIT. See [LICENSE](LICENSE). Building from source is covered in [INSTALL.md](INSTALL.md).

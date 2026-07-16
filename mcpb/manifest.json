@@ -1,0 +1,67 @@
+{
+  "manifest_version": "0.3",
+  "name": "ravendb-mcp",
+  "display_name": "RavenDB",
+  "version": "1.0.2",
+  "description": "Read-only MCP diagnostics server for RavenDB.",
+  "long_description": "A local, read-only MCP diagnostics server for RavenDB. Point it at a cluster and your AI agent can inspect cluster, database, index, task, storage, and performance state, plus logs, support packages, and read-only data, across 21 read-only tools. Connection-string secrets are masked in the returned JSON.",
+  "author": {
+    "name": "RavenDB",
+    "url": "https://ravendb.net"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ravendb/ravendb-mcp"
+  },
+  "homepage": "https://ravendb.net",
+  "documentation": "https://github.com/ravendb/ravendb-mcp",
+  "support": "https://github.com/ravendb/ravendb-mcp/issues",
+  "license": "MIT",
+  "keywords": ["ravendb", "mcp", "database", "diagnostics"],
+  "privacy_policies": [
+    "https://github.com/ravendb/ravendb-mcp/blob/main/PRIVACY.md",
+    "https://ravendb.net/legal/website/privacy-policy"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/cli.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/cli.js"],
+      "env": {
+        "RAVENDB_URLS": "${user_config.RAVENDB_URLS}",
+        "RAVENDB_CERTIFICATE_PATH": "${user_config.RAVENDB_CERTIFICATE_PATH}",
+        "RAVENDB_CERTIFICATE_PASSWORD": "${user_config.RAVENDB_CERTIFICATE_PASSWORD}"
+      }
+    }
+  },
+  "user_config": {
+    "RAVENDB_URLS": {
+      "type": "string",
+      "title": "RavenDB URL(s)",
+      "description": "Node URLs of your cluster, comma or semicolon separated. Use an https URL for a secured cluster.",
+      "required": true,
+      "default": "http://localhost:8080"
+    },
+    "RAVENDB_CERTIFICATE_PATH": {
+      "type": "file",
+      "title": "Client certificate (.pfx)",
+      "description": "Secured (HTTPS) clusters only. Leave empty for an unsecured cluster.",
+      "required": false
+    },
+    "RAVENDB_CERTIFICATE_PASSWORD": {
+      "type": "string",
+      "title": "Certificate password",
+      "description": "Only if your .pfx certificate has a password.",
+      "sensitive": true,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["win32", "darwin", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
