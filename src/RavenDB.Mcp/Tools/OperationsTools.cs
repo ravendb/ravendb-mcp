@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class OperationsTools
 {
-    [McpServerTool(Name = "get_live_workload", Title = "Live workload", ReadOnly = true)]
+    [McpServerTool(Name = "get_live_workload", Title = "Inspect running queries & operations", ReadOnly = true)]
     [Description("Live runtime activity: running (and longest-running) operations, currently running queries plus the query cache, and transaction info. Choose sections with include (default: all). Pass operationId to fetch one operation's state instead of the overview. databaseName is required for Queries and (with operationId) Operations; for Operations/Transactions without it, results are server-wide.")]
     public static async Task<Dictionary<string, object?>> GetLiveWorkload(
         RavenDbAdminClient client,

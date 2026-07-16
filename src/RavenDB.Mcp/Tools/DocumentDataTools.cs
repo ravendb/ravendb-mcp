@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DocumentDataTools
 {
-    [McpServerTool(Name = "get_document_data", Title = "Document data", ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = true)]
+    [McpServerTool(Name = "get_document_data", Title = "Inspect document", ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = true)]
     [Description("Everything about ONE document by id. Sections: Document (body + @metadata; Found=false when absent), Counters, Attachments (names/sizes/hashes), TimeSeries (requires timeSeriesName, optional from/to), Revisions, Conflicts. Choose with include; default is Document. Returns real document data.")]
     public static async Task<Dictionary<string, object?>> GetDocumentData(
         RavenDbAdminClient client,
@@ -70,7 +70,7 @@ public static class DocumentDataTools
         return client.RunQuery(databaseName, query, start, pageSize, parameters, metadata, cancellationToken);
     }
 
-    [McpServerTool(Name = "list_compare_exchange", Title = "Compare-exchange entries", ReadOnly = true)]
+    [McpServerTool(Name = "list_compare_exchange", Title = "List compare-exchange entries", ReadOnly = true)]
     [Description("List cluster-wide compare-exchange (cmpxchg) key/value entries — used for atomic guards, unique constraints, and cluster-transaction state. Optional startsWith key prefix; paged (1-1024, default 100). Not document-scoped.")]
     public static Task<JsonElement> ListCompareExchange(
         RavenDbAdminClient client,
