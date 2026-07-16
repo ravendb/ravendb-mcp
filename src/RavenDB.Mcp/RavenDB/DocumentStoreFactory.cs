@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using ModelContextProtocol;
 using Raven.Client.Documents;
 using RavenDB.Mcp.Configuration;
 
@@ -31,7 +32,7 @@ public static class DocumentStoreFactory
             return null;
 
         if (!File.Exists(options.CertificatePath))
-            throw new InvalidOperationException($"RavenDB certificate file was not found: {options.CertificatePath}");
+            throw new McpException($"RavenDB certificate file was not found: {options.CertificatePath}");
 
         try
         {
@@ -40,13 +41,13 @@ public static class DocumentStoreFactory
         catch (CryptographicException ex)
         {
             if (options.CertificatePassword is not null && options.CertificatePassword.StartsWith(EncryptedSecretMarker, StringComparison.Ordinal))
-                throw new InvalidOperationException(
+                throw new McpException(
                     $"The RavenDB certificate password arrived still encrypted (it begins with \"{EncryptedSecretMarker}\"), " +
                     "so the certificate could not be opened. Claude Desktop forwarded the stored \"sensitive\" setting without " +
                     "decrypting it. Until that is fixed, use a certificate whose password is not marked sensitive, or an " +
                     "unencrypted certificate.", ex);
 
-            throw new InvalidOperationException(
+            throw new McpException(
                 $"The RavenDB certificate at \"{options.CertificatePath}\" could not be opened; the .pfx password is missing or incorrect.",
                 ex);
         }

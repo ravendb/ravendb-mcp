@@ -1,3 +1,4 @@
+using ModelContextProtocol;
 using Raven.Client.Documents.Operations.Identities;
 using Raven.Client.Documents.Operations;
 using Raven.Client.Documents.Operations.OngoingTasks;
@@ -155,7 +156,7 @@ public sealed partial class RavenDbAdminClient
         ValidateDatabaseName(databaseName);
 
         if (string.IsNullOrWhiteSpace(subscriptionName))
-            throw new ArgumentException("Subscription name is required.", nameof(subscriptionName));
+            throw new McpException("Subscription name is required.");
 
         var state = await store.Subscriptions.GetSubscriptionStateAsync(
             subscriptionName,
@@ -173,7 +174,7 @@ public sealed partial class RavenDbAdminClient
         ValidateDatabaseName(databaseName);
 
         if (string.IsNullOrWhiteSpace(nodeTag))
-            throw new ArgumentException("Node tag is required.", nameof(nodeTag));
+            throw new McpException("Node tag is required.");
 
         var tcp = await ExecuteServerCommand(new GetTcpInfoCommand(nodeTag, databaseName), cancellationToken);
         return new GetDatabaseTcpInfoResult(databaseName, nodeTag, ToJson(tcp));

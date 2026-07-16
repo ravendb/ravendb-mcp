@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ModelContextProtocol;
 using RavenDB.Mcp.RavenDB;
 
 namespace RavenDB.Mcp.Tests;
@@ -34,7 +35,7 @@ public sealed class DataAndShapeTests(RavenDbTestFixture fixture)
         Assert.Equal(JsonValueKind.Array, rows.ValueKind);
         Assert.NotEmpty(rows.EnumerateArray());
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        await Assert.ThrowsAsync<McpException>(() =>
             client.RunQuery(fixture.DatabaseName, "from TestUsers update { this.Name = 'x' }", null, 10, null, false, cts.Token));
     }
 
@@ -103,7 +104,7 @@ public sealed class DataAndShapeTests(RavenDbTestFixture fixture)
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<McpException>(() =>
             NewClient().GetDatabaseRecord("nonexistent-database-xyz", cts.Token));
     }
 }

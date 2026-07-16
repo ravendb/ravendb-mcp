@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using ModelContextProtocol;
 using RavenDB.Mcp.Tools;
 
 namespace RavenDB.Mcp.RavenDB;
@@ -113,7 +114,7 @@ public sealed partial class RavenDbAdminClient
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"GET {url} failed with {(int)response.StatusCode}: {Encoding.UTF8.GetString(bytes)}");
+            throw new McpException($"GET {url} failed with {(int)response.StatusCode}: {Encoding.UTF8.GetString(bytes)}");
 
         return (bytes, response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream");
     }

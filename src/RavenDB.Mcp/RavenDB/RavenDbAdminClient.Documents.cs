@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using ModelContextProtocol;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations.CompareExchange;
 using Raven.Client.Documents.Operations.Counters;
@@ -32,7 +33,7 @@ public sealed partial class RavenDbAdminClient
             return new GetDocumentResult(databaseName, id, false, ToJson<object?>(null));
 
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"GET {url} failed with {(int)response.StatusCode}: {content}");
+            throw new McpException($"GET {url} failed with {(int)response.StatusCode}: {content}");
 
         var payload = JsonSerializer.Deserialize<JsonElement>(content);
         if (payload.TryGetProperty("Results", out var results)
@@ -123,7 +124,7 @@ public sealed partial class RavenDbAdminClient
         ValidateName(query, "Query", nameof(query));
 
         if (MutatingQuery.IsMatch(query))
-            throw new ArgumentException("run_query is read-only; UPDATE/patch queries are not allowed.", nameof(query));
+            throw new McpException("run_query is read-only; UPDATE/patch queries are not allowed.");
 
         var body = new Dictionary<string, object?>
         {

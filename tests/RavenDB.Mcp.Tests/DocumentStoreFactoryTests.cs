@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using ModelContextProtocol;
 using RavenDB.Mcp.Configuration;
 using RavenDB.Mcp.RavenDB;
 
@@ -41,7 +42,7 @@ public sealed class DocumentStoreFactoryTests
 
         try
         {
-            var ex = Assert.Throws<InvalidOperationException>(() => DocumentStoreFactory.LoadCertificate(new RavenDbOptions
+            var ex = Assert.Throws<McpException>(() => DocumentStoreFactory.LoadCertificate(new RavenDbOptions
             {
                 CertificatePath = certificatePath,
                 CertificatePassword = "wrong-password"
@@ -64,7 +65,7 @@ public sealed class DocumentStoreFactoryTests
 
         try
         {
-            var ex = Assert.Throws<InvalidOperationException>(() => DocumentStoreFactory.LoadCertificate(new RavenDbOptions
+            var ex = Assert.Throws<McpException>(() => DocumentStoreFactory.LoadCertificate(new RavenDbOptions
             {
                 CertificatePath = certificatePath,
                 CertificatePassword = "__encrypted__:djEwabc123=="
