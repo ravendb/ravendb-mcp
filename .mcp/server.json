@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
   "name": "io.github.ravendb/ravendb-mcp",
   "description": "Read-only MCP diagnostics server for RavenDB.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "repository": {
     "url": "https://github.com/ravendb/ravendb-mcp",
     "source": "github"
@@ -12,7 +12,7 @@
       "registryType": "nuget",
       "registryBaseUrl": "https://api.nuget.org/v3/index.json",
       "identifier": "RavenDB.Mcp",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "transport": {
         "type": "stdio"
       },
@@ -44,7 +44,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@ravendb/mcp",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "transport": {
         "type": "stdio"
       },
