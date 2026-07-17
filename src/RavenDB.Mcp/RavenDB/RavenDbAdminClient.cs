@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
+using ModelContextProtocol;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Operations;
@@ -44,7 +45,7 @@ public sealed partial class RavenDbAdminClient(
             cancellationToken);
 
         if (record is null)
-            throw new InvalidOperationException($"Database '{databaseName}' was not found.");
+            throw new McpException($"Database '{databaseName}' was not found.");
 
         return RedactSecrets(ToJson(record));
     }
@@ -209,7 +210,7 @@ public sealed partial class RavenDbAdminClient(
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"GET {url} failed with {(int)response.StatusCode}: {content}");
+            throw new McpException($"GET {url} failed with {(int)response.StatusCode}: {content}");
 
         return content;
     }
@@ -426,7 +427,7 @@ public sealed partial class RavenDbAdminClient(
     private static void ValidateName(string value, string label, string parameterName)
     {
         if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException($"{label} is required.", parameterName);
+            throw new McpException($"{label} is required.");
     }
 
     private sealed class ServerCommandOperation<T>(RavenCommand<T> command) : IServerOperation<T>

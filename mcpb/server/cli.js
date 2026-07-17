@@ -2,11 +2,11 @@
 'use strict';
 
 // MCPB launcher. Claude Desktop runs this with its bundled Node; it picks the self-contained
-// RavenDB binary for the host OS and architecture and execs it, proxying the MCP stdio stream.
+// RavenDB binary for the host OS and architecture and runs it, forwarding the MCP stdio stream.
 // One bundle carries all platforms, which the `binary` server type cannot do (its platform
 // overrides distinguish OS only, not arm64 vs x64).
 
-const { spawnSync } = require('node:child_process');
+const { spawn } = require('node:child_process');
 const { existsSync, chmodSync } = require('node:fs');
 const path = require('node:path');
 
@@ -43,10 +43,17 @@ for (const name of ['RAVENDB_CERTIFICATE_PATH', 'RAVENDB_CERTIFICATE_PASSWORD'])
   if (!value || value.includes('${')) delete env[name];
 }
 
-// stdout carries the MCP JSON-RPC stream; never write to it. Inherit stdio so the binary owns it.
-const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: 'inherit', env });
-if (result.error) {
-  console.error(`[ravendb-mcp] Failed to launch the server: ${result.error.message}`);
+// Proxy stdio by forwarding the streams in JS rather than inheriting OS handles. Claude Desktop's
+// bundled Node hands us pipe handles that a spawned native binary cannot reliably inherit on
+// Windows, which leaves the server "connected" but mute; copying the bytes ourselves works on
+// every runtime. stdout carries the MCP JSON-RPC stream; we never write to it directly.
+const child = spawn(binaryPath, process.argv.slice(2), { stdio: ['pipe', 'pipe', 'pipe'], env });
+process.stdin.pipe(child.stdin);
+child.stdout.pipe(process.stdout);
+child.stderr.pipe(process.stderr);
+child.stdin.on('error', () => { /* the server exited; ignore EPIPE on further client writes */ });
+child.on('error', (err) => {
+  console.error(`[ravendb-mcp] Failed to launch the server: ${err.message}`);
   process.exit(1);
-}
-process.exit(result.status ?? 0);
+});
+child.on('exit', (code, signal) => process.exit(code ?? (signal ? 1 : 0)));

@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using ModelContextProtocol;
 using RavenDB.Mcp.Configuration;
 using RavenDB.Mcp.RavenDB;
 
@@ -26,6 +27,53 @@ public sealed class DocumentStoreFactoryTests
 
             Assert.NotNull(store.Certificate);
             Assert.True(store.Certificate.HasPrivateKey);
+        }
+        finally
+        {
+            File.Delete(certificatePath);
+        }
+    }
+
+    [Fact]
+    public async Task WrongPasswordThrowsClearError()
+    {
+        var certificatePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pfx");
+        await File.WriteAllBytesAsync(certificatePath, CreateTestCertificate("ravendb-mcp-test"));
+
+        try
+        {
+            var ex = Assert.Throws<McpException>(() => DocumentStoreFactory.LoadCertificate(new RavenDbOptions
+            {
+                CertificatePath = certificatePath,
+                CertificatePassword = "wrong-password"
+            }));
+
+            Assert.Contains("password is missing or incorrect", ex.Message);
+            Assert.IsType<CryptographicException>(ex.InnerException);
+        }
+        finally
+        {
+            File.Delete(certificatePath);
+        }
+    }
+
+    [Fact]
+    public async Task EncryptedMarkerPasswordExplainsClaudeDesktop()
+    {
+        var certificatePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pfx");
+        await File.WriteAllBytesAsync(certificatePath, CreateTestCertificate("ravendb-mcp-test"));
+
+        try
+        {
+            var ex = Assert.Throws<McpException>(() => DocumentStoreFactory.LoadCertificate(new RavenDbOptions
+            {
+                CertificatePath = certificatePath,
+                CertificatePassword = "__encrypted__:djEwabc123=="
+            }));
+
+            Assert.Contains("still encrypted", ex.Message);
+            Assert.Contains("__encrypted__:", ex.Message);
+            Assert.IsType<CryptographicException>(ex.InnerException);
         }
         finally
         {

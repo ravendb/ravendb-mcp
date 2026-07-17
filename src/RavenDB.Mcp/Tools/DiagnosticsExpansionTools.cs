@@ -8,7 +8,7 @@ namespace RavenDB.Mcp.Tools;
 [McpServerToolType]
 public static class DiagnosticsExpansionTools
 {
-    [McpServerTool(Name = "sample_live_feed", Title = "Sample live feed", ReadOnly = true, UseStructuredContent = true)]
+    [McpServerTool(Name = "sample_live_feed", Title = "Sample live diagnostics", ReadOnly = true, UseStructuredContent = true)]
     [Description("Pull a live server feed for a few seconds and return what streamed in. feed selects the source: AdminLogs (operational logs), ClusterDashboard (throughput/requests/indexing/storage), TrafficWatch (HTTP/TCP requests as they happen — optional databaseName filter), GcEvents, Allocations, ThreadContention, or ThreadRunaway (a one-shot snapshot, ignores seconds). seconds is the capture window, 1-30. ThreadRunaway returns the top-5 threads by CPU in full plus a compact index of all threads; pass threadNamePrefix for full detail on specific threads. Returns the captured text with Truncated/Limit flags when capped.")]
     public static Task<DiagnosticTextSampleResult> SampleLiveFeed(
         RavenDbAdminClient client,
@@ -31,7 +31,7 @@ public static class DiagnosticsExpansionTools
         };
     }
 
-    [McpServerTool(Name = "wait_for_completion", Title = "Wait for completion", ReadOnly = true)]
+    [McpServerTool(Name = "wait_for_completion", Title = "Wait for an operation or indexing", ReadOnly = true)]
     [Description("Block until a condition is met or the timeout elapses. condition=Operation polls a server operation (by operationId) until a terminal state (Completed/Faulted/Canceled); condition=Indexing waits until the database has no stale indexes. Returns completion flag, poll count, and last state.")]
     public static Task<WaitForConditionResult> WaitForCompletion(
         RavenDbAdminClient client,
