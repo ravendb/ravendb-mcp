@@ -124,13 +124,32 @@ public sealed partial class RavenDbAdminClient
         (byte[] Bytes, string ContentType) content,
         CancellationToken cancellationToken)
     {
-        Directory.CreateDirectory(artifactsPath);
+        EnsureArtifactsDirectory();
 
         var fileName = $"{DateTime.UtcNow:yyyyMMddHHmmssfff}-{SanitizeFileName(name)}{ExtensionFor(content.ContentType)}";
         var path = Path.Combine(artifactsPath, fileName);
         await File.WriteAllBytesAsync(path, content.Bytes, cancellationToken);
 
         return new DiagnosticArtifactResult(path, content.ContentType, content.Bytes.LongLength);
+    }
+
+    private void EnsureArtifactsDirectory()
+    {
+        Directory.CreateDirectory(artifactsPath);
+
+        if (artifactsPathIsDefault && !OperatingSystem.IsWindows())
+        {
+            try
+            {
+                File.SetUnixFileMode(
+                    artifactsPath,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+            {
+                // best-effort
+            }
+        }
     }
 
     // Name the artifact for what it actually is, so the returned path is directly openable.

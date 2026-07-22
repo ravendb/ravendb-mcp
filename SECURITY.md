@@ -23,3 +23,25 @@ RavenDB MCP is a **read-only** diagnostics server:
 - Access is bounded by the client certificate's RavenDB permissions. Prefer a least-privilege
   certificate (per-database Read for the database and query tools); Operator clearance is only needed
   for the server-wide and cluster-wide diagnostics.
+
+## Data reaches the agent
+
+`get_document_data` and `run_query` (and any tool you point at a document or query) return **real
+cluster data** into the agent's model context, as designed. Diagnostics can likewise echo live
+values. What cluster you connect to, and what the agent then does with that data, is your call — scope
+the certificate to the data the agent should see, and prefer a non-production cluster when the agent
+or its transcript is not trusted with production contents.
+
+## Certificate password
+
+`RAVENDB_CERTIFICATE_PASSWORD` is read from the environment (or the `--config` file) and used only
+in-process to open the `.pfx`; it is never logged or written to disk. Mark it as a secret in your
+client configuration, and drop it entirely when the `.pfx` has no password.
+
+## Exported files
+
+Log exports and debug packages are written unredacted to the artifacts folder and can contain
+secrets. When the location is left to default, the server writes to a temp folder locked to the
+current user (mode `0700` on Linux/macOS), which the OS reclaims on its normal temp-cleanup schedule.
+A folder you set with `RAVENDB_ARTIFACTS_PATH` is used as-is — no permission changes, and its
+retention and cleanup are yours. Either way, treat that folder as sensitive.
