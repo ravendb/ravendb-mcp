@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write      # create the GitHub release
-  id-token: write      # keyless signing for build provenance (Sigstore/Fulcio)
-  attestations: write  # record the provenance attestation
+  contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   build-release:
@@ -51,9 +51,6 @@ jobs:
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
           } | Set-Content artifacts/checksums.txt
 
-      # Signed build provenance for every published archive. Verifiable with
-      # `gh attestation verify <file> --repo ravendb/ravendb-mcp` — this is what links the
-      # release binaries to this workflow run, so `checksums.txt` no longer stands alone.
       - name: Attest build provenance
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:

@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read       # checkout only
-  id-token: write      # keyless signing for build provenance (Sigstore/Fulcio)
-  attestations: write  # record the provenance attestation
+  contents: read
+  id-token: write
+  attestations: write
 
 jobs:
   nuget:
@@ -21,16 +21,12 @@ jobs:
       - name: Pack
         run: dotnet pack src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -o artifacts
 
-      # Signed build provenance for the package, verifiable with
-      # `gh attestation verify <file> --repo ravendb/ravendb-mcp`.
       - name: Attest build provenance
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
           subject-path: "artifacts/*.nupkg"
 
       - name: Push
-        # API key via env, not interpolated into the command line, so it never lands in the
-        # process table or a shell trace.
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate

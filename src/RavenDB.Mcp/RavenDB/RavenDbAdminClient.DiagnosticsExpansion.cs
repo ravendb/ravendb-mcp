@@ -119,9 +119,6 @@ public sealed partial class RavenDbAdminClient
         return (bytes, response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream");
     }
 
-    // Exported artifacts can outlive their usefulness by weeks. When we own the default location we
-    // delete our own leftovers older than this on the next export, so secrets in old debug packages
-    // do not linger in a temp folder indefinitely.
     private static readonly TimeSpan ArtifactRetention = TimeSpan.FromHours(24);
 
     private async Task<DiagnosticArtifactResult> SaveArtifact(
@@ -145,10 +142,6 @@ public sealed partial class RavenDbAdminClient
     {
         Directory.CreateDirectory(artifactsPath);
 
-        // The default location is a shared temp dir (world-readable /tmp on Linux). Exported packages
-        // and log dumps can contain secrets that structural redaction cannot mask, so restrict the
-        // folder to the current user. Best-effort: some filesystems reject chmod, and the export
-        // must still succeed. A user-supplied ArtifactsPath is left exactly as configured.
         if (artifactsPathIsDefault && !OperatingSystem.IsWindows())
         {
             try
@@ -159,6 +152,7 @@ public sealed partial class RavenDbAdminClient
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
             {
+                // best-effort
             }
         }
     }
@@ -178,13 +172,13 @@ public sealed partial class RavenDbAdminClient
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
                 {
-                    // A file we cannot delete (in use, permissions) is skipped, not fatal.
+                    // best-effort
                 }
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
         {
-            // Cleanup is best-effort; never let it break an export.
+            // best-effort
         }
     }
 

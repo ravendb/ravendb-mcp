@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read   # checkout only
-  id-token: write  # authenticate to the MCP Registry via GitHub OIDC
+  contents: read
+  id-token: write
 
 jobs:
   registry:
