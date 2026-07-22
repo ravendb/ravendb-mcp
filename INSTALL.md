@@ -70,8 +70,11 @@ claude mcp add ravendb --scope user --env RAVENDB_URLS=https://node-a.example.de
 - Prefer a least-privilege certificate. A per-database **Read** certificate covers the database,
   index, query, and document tools; **Operator** clearance is only needed for the server-wide and
   cluster-wide tools. The certificate's permissions bound what the agent can see.
-- Drop the password variable if the `.pfx` has none.
-- For unsecured (HTTP) clusters, leave both certificate settings unset.
+- Drop the password variable if the `.pfx` has none. When set, `RAVENDB_CERTIFICATE_PASSWORD` is used
+  only in-process to open the `.pfx` — never logged or written to disk. Mark it as a secret in your
+  client config (in `server.json` it is declared `isSecret`).
+- For unsecured (HTTP) clusters, leave both certificate settings unset. The server prints a startup
+  warning on an `http://` URL, since traffic is then unencrypted.
 
 Generate a client certificate in RavenDB Studio under **Manage Server > Certificates**.
 
@@ -91,8 +94,11 @@ reference instead of flooding the context:
 ```
 
 Without `RAVENDB_ARTIFACTS_PATH`, files go to a `ravendb-mcp-artifacts` folder in the system temp
-directory (`%TEMP%` on Windows, `$TMPDIR` or `/tmp` on macOS/Linux). Set it for a persistent
-location, since the OS may purge temp.
+directory (`%TEMP%` on Windows, `$TMPDIR` or `/tmp` on macOS/Linux). Because log exports and debug
+packages are written unredacted and can contain secrets, this default folder is locked to your user
+(mode `0700` on Linux/macOS) and the server expires its own exports there after 24 hours. Set
+`RAVENDB_ARTIFACTS_PATH` for a persistent location you manage yourself — a folder you set is used
+as-is, with no permission changes and no expiry, so its retention and cleanup are up to you.
 
 ## GUI clients
 

@@ -58,11 +58,12 @@ builder.Services
 
 var app = builder.Build();
 
+RavenDbOptions options;
 try
 {
     // Validate configuration up front so an invalid setup (e.g. no RavenDB URL) fails with a clean
     // message instead of the host logging a startup exception with a stack trace.
-    _ = app.Services.GetRequiredService<IOptions<RavenDbOptions>>().Value;
+    options = app.Services.GetRequiredService<IOptions<RavenDbOptions>>().Value;
 }
 catch (OptionsValidationException ex)
 {
@@ -71,8 +72,31 @@ catch (OptionsValidationException ex)
     return 1;
 }
 
+WarnOnInsecureSetup(options);
+
 await app.RunAsync();
 return 0;
+
+static void WarnOnInsecureSetup(RavenDbOptions options)
+{
+    // Plain HTTP means no TLS: credentials (incl. the client certificate handshake) and the document
+    // data the agent reads travel unencrypted. Fine for a trusted localhost cluster; worth flagging
+    // for anything else.
+    var plainHttp = options.Urls
+        .Where(url => url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        .ToArray();
+    if (plainHttp.Length > 0)
+        Console.Error.WriteLine(
+            $"ravendb-mcp: warning: connecting over plain HTTP ({string.Join(", ", plainHttp)}). Traffic is " +
+            "unencrypted; use an https:// URL for anything other than a trusted local cluster.");
+
+    // Exported files are not redacted the way structured JSON is. Say where they go and that they are
+    // sensitive, so an operator does not leave a debug package with settings.json secrets lying around.
+    Console.Error.WriteLine(
+        $"ravendb-mcp: exported files (log dumps, debug packages) are written to " +
+        $"{RavenDbAdminClient.ResolveArtifactsPath(options)} and can contain secrets that redaction does not mask. " +
+        "Treat that folder as sensitive.");
+}
 
 static IEnumerable<KeyValuePair<string, string?>> MapRavenEnvironment()
 {

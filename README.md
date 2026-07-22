@@ -61,6 +61,7 @@ Then ask the agent *“list my RavenDB databases.”* Any of these can use `dnx 
 - Read-only: no write, patch, or delete tools, and mutating queries are rejected.
 - Connection-string secrets (passwords, cloud keys, SAS tokens, AI-provider keys, certificates) are masked in the returned JSON.
 - Access is scoped to the client certificate's RavenDB permissions.
+- `get_document_data` and `run_query` return real cluster data into the agent's context — you choose which cluster to expose. See [SECURITY.md](SECURITY.md).
 
 **Context-window friendly**
 - Progressive disclosure: tools return an overview by default and drill into detail on request.

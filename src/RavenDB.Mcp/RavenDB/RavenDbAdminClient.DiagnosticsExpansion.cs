@@ -119,18 +119,73 @@ public sealed partial class RavenDbAdminClient
         return (bytes, response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream");
     }
 
+    // Exported artifacts can outlive their usefulness by weeks. When we own the default location we
+    // delete our own leftovers older than this on the next export, so secrets in old debug packages
+    // do not linger in a temp folder indefinitely.
+    private static readonly TimeSpan ArtifactRetention = TimeSpan.FromHours(24);
+
     private async Task<DiagnosticArtifactResult> SaveArtifact(
         string name,
         (byte[] Bytes, string ContentType) content,
         CancellationToken cancellationToken)
     {
-        Directory.CreateDirectory(artifactsPath);
+        EnsureArtifactsDirectory();
+
+        if (artifactsPathIsDefault)
+            CleanupExpiredArtifacts();
 
         var fileName = $"{DateTime.UtcNow:yyyyMMddHHmmssfff}-{SanitizeFileName(name)}{ExtensionFor(content.ContentType)}";
         var path = Path.Combine(artifactsPath, fileName);
         await File.WriteAllBytesAsync(path, content.Bytes, cancellationToken);
 
         return new DiagnosticArtifactResult(path, content.ContentType, content.Bytes.LongLength);
+    }
+
+    private void EnsureArtifactsDirectory()
+    {
+        Directory.CreateDirectory(artifactsPath);
+
+        // The default location is a shared temp dir (world-readable /tmp on Linux). Exported packages
+        // and log dumps can contain secrets that structural redaction cannot mask, so restrict the
+        // folder to the current user. Best-effort: some filesystems reject chmod, and the export
+        // must still succeed. A user-supplied ArtifactsPath is left exactly as configured.
+        if (artifactsPathIsDefault && !OperatingSystem.IsWindows())
+        {
+            try
+            {
+                File.SetUnixFileMode(
+                    artifactsPath,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+            {
+            }
+        }
+    }
+
+    private void CleanupExpiredArtifacts()
+    {
+        var cutoff = DateTime.UtcNow - ArtifactRetention;
+
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(artifactsPath))
+            {
+                try
+                {
+                    if (File.GetLastWriteTimeUtc(file) < cutoff)
+                        File.Delete(file);
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    // A file we cannot delete (in use, permissions) is skipped, not fatal.
+                }
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
+        {
+            // Cleanup is best-effort; never let it break an export.
+        }
     }
 
     // Name the artifact for what it actually is, so the returned path is directly openable.

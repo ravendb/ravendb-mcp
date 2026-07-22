@@ -4,15 +4,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write      # create the GitHub release
+  id-token: write      # keyless signing for build provenance (Sigstore/Fulcio)
+  attestations: write  # record the provenance attestation
 
 jobs:
   build-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.x
 
@@ -48,6 +50,16 @@ jobs:
           Get-ChildItem artifacts -File | Sort-Object Name | ForEach-Object {
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
           } | Set-Content artifacts/checksums.txt
+
+      # Signed build provenance for every published archive. Verifiable with
+      # `gh attestation verify <file> --repo ravendb/ravendb-mcp` — this is what links the
+      # release binaries to this workflow run, so `checksums.txt` no longer stands alone.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: |
+            artifacts/ravendb-mcp-*.zip
+            artifacts/ravendb-mcp-*.tar.gz
 
       - name: Create GitHub release
         env:

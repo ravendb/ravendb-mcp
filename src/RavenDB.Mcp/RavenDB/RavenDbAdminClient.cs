@@ -32,9 +32,18 @@ public sealed partial class RavenDbAdminClient(
     // Typed Client-API calls still fail over across the cluster; raw debug/admin routes do not.
     // TODO: topology-aware raw scans (per-node fan-out) are deferred.
     private readonly string serverUrl = (options?.Value.Urls.FirstOrDefault() ?? store.Urls.First()).TrimEnd('/');
-    private readonly string artifactsPath = string.IsNullOrWhiteSpace(options?.Value.ArtifactsPath)
-        ? Path.Combine(Path.GetTempPath(), "ravendb-mcp-artifacts")
-        : options.Value.ArtifactsPath;
+    private readonly string artifactsPath = ResolveArtifactsPath(options?.Value);
+
+    // When ArtifactsPath is unset we own the location (a shared temp dir), so we lock it down and
+    // expire old files. A path the user chose is left exactly as configured — retention is theirs.
+    private readonly bool artifactsPathIsDefault = string.IsNullOrWhiteSpace(options?.Value.ArtifactsPath);
+
+    // Where exported files (log dumps, debug packages) land. Public + static so startup can name the
+    // path in its warning using the same resolution the client uses.
+    public static string ResolveArtifactsPath(RavenDbOptions? options) =>
+        string.IsNullOrWhiteSpace(options?.ArtifactsPath)
+            ? Path.Combine(Path.GetTempPath(), "ravendb-mcp-artifacts")
+            : options.ArtifactsPath;
 
     private async Task<JsonElement> GetDatabaseRecordJson(string databaseName, CancellationToken cancellationToken)
     {

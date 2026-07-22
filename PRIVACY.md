@@ -16,11 +16,14 @@ you install via `npx` or `dnx`, a one-time download of the server itself from np
 ## Your data
 
 - Diagnostics, and on request documents and query results, flow only between your cluster, this local
-  process, and your agent.
+  process, and your agent. `get_document_data` and `run_query` return real cluster data into the
+  agent's model context — choosing what cluster to expose, and how that data is handled once it
+  reaches the agent, is up to you.
 - Connection-string secrets (passwords, API keys, cloud credentials, SAS tokens) are masked as
   `***redacted***` before leaving the server.
 - Exported files (logs, debug packages) are written only to a local folder you control
-  (`RAVENDB_ARTIFACTS_PATH`, or your system temp folder).
+  (`RAVENDB_ARTIFACTS_PATH`, or your system temp folder). The default folder is locked to your user
+  and its exports expire after 24 hours; a folder you set is left for you to manage.
 
 ## Storage, sharing, retention
 
