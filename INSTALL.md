@@ -96,9 +96,9 @@ reference instead of flooding the context:
 Without `RAVENDB_ARTIFACTS_PATH`, files go to a `ravendb-mcp-artifacts` folder in the system temp
 directory (`%TEMP%` on Windows, `$TMPDIR` or `/tmp` on macOS/Linux). Because log exports and debug
 packages are written unredacted and can contain secrets, this default folder is locked to your user
-(mode `0700` on Linux/macOS) and the server expires its own exports there after 24 hours. Set
+(mode `0700` on Linux/macOS); the OS reclaims temp on its normal schedule. Set
 `RAVENDB_ARTIFACTS_PATH` for a persistent location you manage yourself — a folder you set is used
-as-is, with no permission changes and no expiry, so its retention and cleanup are up to you.
+as-is, with no permission changes, so its retention and cleanup are up to you.
 
 ## GUI clients
 

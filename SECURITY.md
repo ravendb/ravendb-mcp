@@ -41,7 +41,7 @@ client configuration, and drop it entirely when the `.pfx` has no password.
 ## Exported files
 
 Log exports and debug packages are written unredacted to the artifacts folder and can contain
-secrets. When the location is left to default, the server writes to a per-user temp folder (locked to
-the current user on Linux/macOS) and expires its own exports after 24 hours; a folder you set with
-`RAVENDB_ARTIFACTS_PATH` is used as-is, and its contents are yours to retain and clean up. Either way,
-treat that folder as sensitive.
+secrets. When the location is left to default, the server writes to a temp folder locked to the
+current user (mode `0700` on Linux/macOS), which the OS reclaims on its normal temp-cleanup schedule.
+A folder you set with `RAVENDB_ARTIFACTS_PATH` is used as-is — no permission changes, and its
+retention and cleanup are yours. Either way, treat that folder as sensitive.

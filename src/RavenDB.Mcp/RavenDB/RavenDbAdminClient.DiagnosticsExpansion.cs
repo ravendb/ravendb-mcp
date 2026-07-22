@@ -119,17 +119,12 @@ public sealed partial class RavenDbAdminClient
         return (bytes, response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream");
     }
 
-    private static readonly TimeSpan ArtifactRetention = TimeSpan.FromHours(24);
-
     private async Task<DiagnosticArtifactResult> SaveArtifact(
         string name,
         (byte[] Bytes, string ContentType) content,
         CancellationToken cancellationToken)
     {
         EnsureArtifactsDirectory();
-
-        if (artifactsPathIsDefault)
-            CleanupExpiredArtifacts();
 
         var fileName = $"{DateTime.UtcNow:yyyyMMddHHmmssfff}-{SanitizeFileName(name)}{ExtensionFor(content.ContentType)}";
         var path = Path.Combine(artifactsPath, fileName);
@@ -154,31 +149,6 @@ public sealed partial class RavenDbAdminClient
             {
                 // best-effort
             }
-        }
-    }
-
-    private void CleanupExpiredArtifacts()
-    {
-        var cutoff = DateTime.UtcNow - ArtifactRetention;
-
-        try
-        {
-            foreach (var file in Directory.EnumerateFiles(artifactsPath))
-            {
-                try
-                {
-                    if (File.GetLastWriteTimeUtc(file) < cutoff)
-                        File.Delete(file);
-                }
-                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-                {
-                    // best-effort
-                }
-            }
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
-        {
-            // best-effort
         }
     }
 

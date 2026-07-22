@@ -22,8 +22,8 @@ you install via `npx` or `dnx`, a one-time download of the server itself from np
 - Connection-string secrets (passwords, API keys, cloud credentials, SAS tokens) are masked as
   `***redacted***` before leaving the server.
 - Exported files (logs, debug packages) are written only to a local folder you control
-  (`RAVENDB_ARTIFACTS_PATH`, or your system temp folder). The default folder is locked to your user
-  and its exports expire after 24 hours; a folder you set is left for you to manage.
+  (`RAVENDB_ARTIFACTS_PATH`, or your system temp folder). The default temp folder is locked to your
+  user and reclaimed by the OS on its normal schedule; a folder you set is left for you to manage.
 
 ## Storage, sharing, retention
 
