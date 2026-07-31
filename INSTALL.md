@@ -108,8 +108,12 @@ Editors that use a config file rather than a CLI. Set the launch command to `npx
 ### Claude Desktop
 
 Easiest route: download `ravendb-mcp-<version>.mcpb` from
-[Releases](https://github.com/ravendb/ravendb-mcp/releases) and open it. It carries the server for
-all five platforms and prompts for your cluster URL, certificate path, and password.
+[Releases](https://github.com/ravendb/ravendb-mcp/releases), then in Claude Desktop go to
+**Settings > Extensions**, click **Advanced settings**, and under **Extension Developer** click
+**Install Extension…** and pick the file
+([Anthropic's guide](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)).
+The bundle carries the server for all five platforms and prompts for your cluster URL, certificate
+path, and password.
 
 To configure it by hand instead, edit `%APPDATA%\Claude\claude_desktop_config.json` (Windows) or
 `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS), then restart:

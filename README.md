@@ -21,7 +21,7 @@ Or install the plugin, which prompts for your cluster URL:
 
 **Claude Desktop**
 
-Download `ravendb-mcp-<version>.mcpb` from [Releases](https://github.com/ravendb/ravendb-mcp/releases) and open it. Claude Desktop installs it as an extension and prompts for your cluster URL, so there is no config to edit and no Node or .NET needed. Config-file setup is in [INSTALL.md](INSTALL.md#claude-desktop).
+Download `ravendb-mcp-<version>.mcpb` from [Releases](https://github.com/ravendb/ravendb-mcp/releases), then install it under **Settings > Extensions > Advanced settings > "Install Extension…"** ([Anthropic's guide](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)). It prompts for your cluster URL, so there is no config to edit and no Node or .NET needed. Config-file setup is in [INSTALL.md](INSTALL.md#claude-desktop).
 
 **Codex**
 
