@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync, chmodSync, existsSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync, chmodSync, statSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -44,7 +44,17 @@ function buildPlatformPackage(key, meta, version, publishDir, outRoot) {
   mkdirSync(binDir, { recursive: true });
   const destBinary = join(binDir, meta.bin);
   copyFileSync(srcBinary, destBinary);
-  if (os !== 'win32') chmodSync(destBinary, 0o755);
+  if (os !== 'win32') {
+    // npm packs whatever mode the file has on disk. chmod is a no-op on hosts without POSIX
+    // permissions (Windows), which silently ships a 0644 binary that `npx @ravendb/mcp` cannot
+    // execute, so refuse to stage rather than publish something broken.
+    chmodSync(destBinary, 0o755);
+    if (!(statSync(destBinary).mode & 0o111)) {
+      console.error(`Cannot set the executable bit on ${destBinary} (host: ${process.platform}).`);
+      console.error(`Stage ${meta.pkg} on Linux or macOS instead; see RELEASING.md.`);
+      process.exit(1);
+    }
+  }
   const pkgJson = {
     name: meta.pkg,
     version,

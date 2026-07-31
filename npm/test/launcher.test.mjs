@@ -33,18 +33,37 @@ test('missing platform package fails with a clean message and exit 1', () => {
   assert.match(r.stderr, /not installed/);
 });
 
+// Stage a stub binary the way an installed platform package would carry it.
+function stageBinary(work, mode) {
+  const meta = platforms[key];
+  const binDir = join(work, 'node_modules', ...meta.pkg.split('/'), 'bin');
+  mkdirSync(binDir, { recursive: true });
+  const binPath = join(binDir, meta.bin);
+  writeFileSync(binPath, `#!/bin/sh\necho "STUB $*"\nexit 7\n`);
+  chmodSync(binPath, mode);
+  return binPath;
+}
+
 test('launcher execs the platform binary, forwarding args and exit code',
   { skip: process.platform === 'win32' ? 'uses a POSIX shell stub' : false },
   () => {
-    const meta = platforms[key];
     const work = mkdtempSync(join(tmpdir(), 'ravendb-mcp-launch-'));
     const cli = stageLauncher(work);
-    const binDir = join(work, 'node_modules', ...meta.pkg.split('/'), 'bin');
-    mkdirSync(binDir, { recursive: true });
-    const binPath = join(binDir, meta.bin);
-    writeFileSync(binPath, `#!/bin/sh\necho "STUB $*"\nexit 7\n`);
-    chmodSync(binPath, 0o755);
+    stageBinary(work, 0o755);
     const r = spawnSync(node, [cli, '--config', 'x.json'], { cwd: work, encoding: 'utf8' });
     assert.equal(r.status, 7, 'exit code forwarded');
     assert.match(r.stdout, /STUB --config x\.json/, 'args forwarded to the binary');
+  });
+
+// A tarball staged on Windows ships the binary as 0644; spawning it fails with EACCES unless the
+// launcher restores the bit. This is what broke `npx -y @ravendb/mcp` on Linux and macOS in 1.0.3.
+test('launcher restores the executable bit when the platform package lost it',
+  { skip: process.platform === 'win32' ? 'uses a POSIX shell stub' : false },
+  () => {
+    const work = mkdtempSync(join(tmpdir(), 'ravendb-mcp-launch-'));
+    const cli = stageLauncher(work);
+    stageBinary(work, 0o644);
+    const r = spawnSync(node, [cli], { cwd: work, encoding: 'utf8' });
+    assert.equal(r.status, 7, 'the binary ran despite shipping without the exec bit');
+    assert.doesNotMatch(r.stderr, /EACCES/);
   });
