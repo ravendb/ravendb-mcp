@@ -1,7 +1,7 @@
 {
   "name": "ravendb-mcp",
   "description": "Read-only MCP diagnostics server for RavenDB.",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "author": {
     "name": "RavenDB",
     "url": "https://ravendb.net"
