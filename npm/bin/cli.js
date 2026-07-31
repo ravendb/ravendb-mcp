@@ -20,6 +20,19 @@ try {
   process.exit(1);
 }
 
+// npm records file modes from whichever machine packed the tarball. Packing on Windows loses the
+// POSIX executable bit, so the binary can arrive as 0644 and every launch fails with EACCES. That
+// is exactly how 1.0.3 shipped. Restore the bit rather than trusting the tarball.
+if (process.platform !== 'win32') {
+  try {
+    const { statSync, chmodSync } = require('node:fs');
+    const { mode } = statSync(binaryPath);
+    if ((mode & 0o111) === 0) chmodSync(binaryPath, (mode & 0o777) | 0o755);
+  } catch (err) {
+    console.error(`[ravendb-mcp] Could not mark "${binaryPath}" executable: ${err.message}`);
+  }
+}
+
 // stdout is the MCP JSON-RPC stream; never write to it. Inherit stdio so the binary owns it, and our own output goes to stderr.
 const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: 'inherit' });
 
