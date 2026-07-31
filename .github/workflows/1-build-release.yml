@@ -18,6 +18,10 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 20
+
       - name: Verify version sync
         id: v
         shell: pwsh
@@ -40,13 +44,30 @@ jobs:
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
           foreach ($rid in @('win-x64', 'win-arm64', 'linux-x64', 'osx-x64', 'osx-arm64')) {
-            dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r $rid --self-contained true -p:PublishSingleFile=true -o "publish/$rid"
+            dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r $rid --self-contained true -p:PublishSingleFile=true -o "artifacts/publish/$rid"
             if ($rid.StartsWith('win-')) {
-              Compress-Archive -Path "publish/$rid/*" -DestinationPath "artifacts/ravendb-mcp-$rid.zip" -Force
+              Compress-Archive -Path "artifacts/publish/$rid/*" -DestinationPath "artifacts/ravendb-mcp-$rid.zip" -Force
             } else {
-              tar -czf "artifacts/ravendb-mcp-$rid.tar.gz" -C "publish/$rid" .
+              tar -czf "artifacts/ravendb-mcp-$rid.tar.gz" -C "artifacts/publish/$rid" .
             }
           }
+
+      # Reuses the binaries published above via --skip-build. Without this the .mcpb only ever
+      # exists on a developer machine, and the Claude Desktop install instructions point at nothing.
+      - name: Build Claude Desktop extension (.mcpb)
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          npm install -g @anthropic-ai/mcpb@2
+          node mcpb/build.mjs --skip-build
+          Copy-Item "dist/ravendb-mcp-$env:VERSION.mcpb" artifacts/
+
+      - name: Checksums
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
           Get-ChildItem artifacts -File | Sort-Object Name | ForEach-Object {
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
           } | Set-Content artifacts/checksums.txt
@@ -57,8 +78,16 @@ jobs:
           subject-path: |
             artifacts/ravendb-mcp-*.zip
             artifacts/ravendb-mcp-*.tar.gz
+            artifacts/ravendb-mcp-*.mcpb
 
+      # Explicit globs, not artifacts/*, because artifacts/ now also holds the publish/ staging tree.
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "v${{ steps.v.outputs.version }}" artifacts/* --generate-notes
+        run: >
+          gh release create "v${{ steps.v.outputs.version }}"
+          artifacts/ravendb-mcp-*.zip
+          artifacts/ravendb-mcp-*.tar.gz
+          artifacts/ravendb-mcp-*.mcpb
+          artifacts/checksums.txt
+          --generate-notes

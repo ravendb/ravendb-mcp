@@ -17,4 +17,5 @@ Decisions made here:
 - **Privacy policy** is in [../PRIVACY.md](../PRIVACY.md); `manifest.json` links it and RavenDB's
   policy, which directory submission requires.
 
-`build.mjs` builds, stages, and packs the `.mcpb` on demand; `ci.yml` runs a Linux smoke test of the launcher.
+`1-build-release.yml` builds the `.mcpb` and attaches it to every GitHub release. `build.mjs` does the
+same locally, and `ci.yml` runs a Linux smoke test of the launcher.
