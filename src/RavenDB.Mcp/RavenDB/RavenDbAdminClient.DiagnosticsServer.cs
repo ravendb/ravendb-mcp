@@ -30,8 +30,11 @@ public sealed partial class RavenDbAdminClient
             RedactSecrets(await TryGetServerJson("/admin/configuration/settings", cancellationToken)),
             keyPrefix);
 
-    // The full config dump is ~200KB, so this is progressive: no prefix returns the index of available
-    // key prefixes with counts; a prefix returns the matching settings entries.
+    // The full config dump is ~200KB, so this is progressive: no prefix returns an index of the
+    // available key prefixes; a prefix returns the matching settings entries.
+    //
+    // The index counts overridden settings per prefix, so a caller can skip the prefixes that
+    // hold nothing but defaults instead of fetching all of them to find out.
     internal static JsonElement FilterServerSettings(JsonElement settings, string? keyPrefix)
     {
         if (settings.ValueKind != JsonValueKind.Object)
@@ -47,29 +50,96 @@ public sealed partial class RavenDbAdminClient
 
         if (string.IsNullOrWhiteSpace(keyPrefix))
         {
-            var prefixes = new SortedDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (var prefix in entries.SelectMany(KeysOf).Select(k => k.Split('.', 2)[0]))
-                prefixes[prefix] = prefixes.GetValueOrDefault(prefix) + 1;
+            var total = new SortedDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var overridden = new SortedDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in entries)
+            {
+                var isSet = entry?["ServerValues"] is JsonObject { Count: > 0 };
+                foreach (var prefix in KeysOf(entry).Select(k => k.Split('.', 2)[0]))
+                {
+                    total[prefix] = total.GetValueOrDefault(prefix) + 1;
+                    if (isSet)
+                        overridden[prefix] = overridden.GetValueOrDefault(prefix) + 1;
+                }
+            }
 
             return ToJson(new
             {
                 available = true,
                 totalEntries = entries.Count,
-                prefixes,
-                hint = "Pass settingsPrefix (e.g. 'Indexing') to fetch the settings under a prefix.",
+                overriddenTotal = overridden.Values.Sum(),
+                overridden,
+                prefixes = total,
+                hint = overridden.Count > 0
+                    ? "Only the prefixes under 'overridden' have a value set on this server; the rest "
+                      + "are product defaults. Pass those to settingsPrefix, comma-separated, in one call."
+                    : "Nothing is overridden on this server: every setting is at its product default, so "
+                      + "fetching prefixes will return defaults only. Pass settingsPrefix just to read a "
+                      + "specific default value.",
             });
         }
 
-        var totalEntries = entries.Count;
-        var kept = new JsonArray();
-        foreach (var entry in entries.ToArray())
-            if (KeysOf(entry).Any(k => k.StartsWith(keyPrefix, StringComparison.OrdinalIgnoreCase)))
-            {
-                entries.Remove(entry);
-                kept.Add(entry);
-            }
+        // A string rather than an array: the package is published, so an array would break existing
+        // callers, and a comma cannot occur in a configuration key.
+        var wanted = keyPrefix.Split(',',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        return ToJson(new { available = true, totalEntries, matched = kept.Count, settings = kept });
+        var totalEntries = entries.Count;
+
+        // The "only what is set" rule applies within each requested prefix. Across the whole result
+        // it would drop any prefix that is at its defaults, silently and without saying so.
+        var matched = new List<JsonNode?>();
+        var configured = new List<JsonNode?>();
+        foreach (var want in wanted)
+        {
+            var group = new List<JsonNode?>();
+            foreach (var entry in entries.ToArray())
+                if (KeysOf(entry).Any(k => k.StartsWith(want, StringComparison.OrdinalIgnoreCase)))
+                {
+                    entries.Remove(entry);
+                    group.Add(entry);
+                }
+
+            var set = group.Where(e => e?["ServerValues"] is JsonObject { Count: > 0 }).ToList();
+            configured.AddRange(set);
+            matched.AddRange(set.Count > 0 ? set : group);
+        }
+
+        // Description, Type, SizeUnit and AvailableValues are most of an entry and never change.
+        // Return the operational fields only.
+        static JsonNode? Compact(JsonNode? entry)
+        {
+            var meta = entry?["Metadata"];
+            var values = entry?["ServerValues"];
+            var o = new JsonObject
+            {
+                ["Key"] = (meta?["Keys"] as JsonArray)?.FirstOrDefault()?.DeepClone(),
+                ["DefaultValue"] = meta?["DefaultValue"]?.DeepClone(),
+            };
+            if (values is JsonObject { Count: > 0 } set)
+                o["ServerValues"] = set.DeepClone();
+            return o;
+        }
+
+        // Selected per prefix above; filtering again here would undo that.
+        var chosen = matched;
+
+        const int MaxSettingsEntries = 100;
+        var page = chosen.Take(MaxSettingsEntries).Select(Compact).ToArray();
+
+        return ToJson(new
+        {
+            available = true,
+            totalEntries,
+            matched = matched.Count,
+            configured = configured.Count,
+            returned = page.Length,
+            truncated = chosen.Count > MaxSettingsEntries,
+            note = configured.Count > 0
+                ? "Showing settings with a value set on the server. Metadata (description, type, bounds) omitted."
+                : "No setting under this prefix is overridden; showing defaults. Metadata omitted.",
+            settings = new JsonArray(page),
+        });
     }
 
     // All registered HTTP routes; large, hence its own facet.
@@ -336,9 +406,101 @@ public sealed partial class RavenDbAdminClient
         return new DiagnosticTextSampleResult(
             "traffic_watch",
             Math.Clamp(seconds, 1, 30),
-            sample.Text,
+            SummariseTrafficWatch(sample.Text),
             sample.Truncated,
             sample.Limit);
+    }
+
+    // The raw feed repeats the client IP, certificate thumbprint, absolute URI and a QueryTimings
+    // tree on every event. Fold by request shape and keep counts plus one example each.
+    // Falls back to the raw text if the feed is not the shape we expect.
+    internal static string SummariseTrafficWatch(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw) || !raw.Contains("\"TrafficWatchType\""))
+            return raw;
+
+        // A stream of top-level objects, not one document, so scan for balanced braces and parse
+        // each alone. A truncated final event is normal, so skip a bad chunk rather than the sample.
+        var events = new List<JsonNode>();
+        var depth = 0;
+        var inString = false;
+        var escaped = false;
+        var start = -1;
+        for (var i = 0; i < raw.Length; i++)
+        {
+            var ch = raw[i];
+            if (inString)
+            {
+                if (escaped) escaped = false;
+                else if (ch == '\\') escaped = true;
+                else if (ch == '"') inString = false;
+                continue;
+            }
+
+            if (ch == '"') { inString = true; continue; }
+            if (ch == '{')
+            {
+                if (depth == 0) start = i;
+                depth++;
+            }
+            else if (ch == '}' && depth > 0)
+            {
+                depth--;
+                if (depth != 0 || start < 0)
+                    continue;
+                try
+                {
+                    if (JsonNode.Parse(raw[start..(i + 1)]) is { } node && node["TrafficWatchType"] is not null)
+                        events.Add(node);
+                }
+                catch (JsonException)
+                {
+                    // skip this chunk, keep the rest
+                }
+                start = -1;
+            }
+        }
+
+        if (events.Count == 0)
+            return raw;
+
+        static string? Str(JsonNode? n) => n?.GetValue<object>()?.ToString();
+        static double Num(JsonNode? n) => double.TryParse(Str(n), out var d) ? d : 0;
+
+        var groups = events
+            .GroupBy(e => new
+            {
+                Type = Str(e["Type"]) ?? Str(e["TrafficWatchType"]),
+                Method = Str(e["HttpMethod"]),
+                Database = Str(e["DatabaseName"]),
+                // The parameters differ per request; the shape does not.
+                Shape = (Str(e["CustomInfo"]) ?? Str(e["RequestUri"]) ?? "").Split('\n')[0].Trim(),
+            })
+            .Select(g => new
+            {
+                type = g.Key.Type,
+                method = g.Key.Method,
+                database = g.Key.Database,
+                shape = g.Key.Shape,
+                count = g.Count(),
+                minMs = g.Min(e => Num(e["ElapsedMilliseconds"])),
+                avgMs = Math.Round(g.Average(e => Num(e["ElapsedMilliseconds"])), 1),
+                maxMs = g.Max(e => Num(e["ElapsedMilliseconds"])),
+                responseBytes = g.Sum(e => Num(e["ResponseSizeInBytes"])),
+                statusCodes = g.Select(e => Str(e["ResponseStatusCode"]))
+                    .GroupBy(c => c).ToDictionary(c => c.Key ?? "?", c => c.Count()),
+            })
+            .OrderByDescending(g => g.count)
+            .ToArray();
+
+        return JsonSerializer.Serialize(new
+        {
+            summarised = true,
+            events = events.Count,
+            distinctShapes = groups.Length,
+            note = "Folded by request shape. Counts and timings are over the whole sample.",
+            requests = groups,
+        }, RavenDbJsonOptions);
     }
 
     public async Task<GetNotificationsResult> GetNotifications(
