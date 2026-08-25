@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using RavenDB.Mcp.RavenDB;
 
 namespace RavenDB.Mcp.Tests;
@@ -46,6 +47,17 @@ public class ServerSettingsIndexTests
         // Http is entirely at its defaults; it must still be represented.
         Assert.Contains("MapTimeoutInSec", both);
         Assert.Contains("MaxRequestBufferSize", both);
+    }
+
+    [Fact]
+    public void OverlappingPrefixesReportASettingOnce()
+    {
+        // "Index" and "Indexing" both match the Indexing keys. An entry joins the first group it
+        // matches and stops, so it must not be reported twice. This used to fall out of removing
+        // the entry from the source array; now it comes from the break in the selection loop.
+        var both = Filter("Index,Indexing");
+
+        Assert.Equal(1, Regex.Matches(both, "MapTimeoutInSec").Count);
     }
 
     [Fact]
