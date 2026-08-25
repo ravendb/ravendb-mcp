@@ -48,6 +48,15 @@ public sealed partial class RavenDbAdminClient
         static IEnumerable<string> KeysOf(JsonNode? entry) =>
             (entry?["Metadata"]?["Keys"] as JsonArray ?? []).Select(k => k!.GetValue<string>());
 
+        // Settings keys are dotted paths, so "Indexing.MapTimeoutInSec" belongs to prefix
+        // "Indexing". Cutting at the first dot avoids allocating the rest of the path, which is
+        // thrown away.
+        static string PrefixOf(string key)
+        {
+            var dot = key.IndexOf('.');
+            return dot < 0 ? key : key[..dot];
+        }
+
         if (string.IsNullOrWhiteSpace(keyPrefix))
         {
             var total = new SortedDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -55,7 +64,7 @@ public sealed partial class RavenDbAdminClient
             foreach (var entry in entries)
             {
                 var isSet = entry?["ServerValues"] is JsonObject { Count: > 0 };
-                foreach (var prefix in KeysOf(entry).Select(k => k.Split('.', 2)[0]))
+                foreach (var prefix in KeysOf(entry).Select(PrefixOf))
                 {
                     total[prefix] = total.GetValueOrDefault(prefix) + 1;
                     if (isSet)
@@ -86,23 +95,32 @@ public sealed partial class RavenDbAdminClient
 
         var totalEntries = entries.Count;
 
+        // One pass over the entries rather than one per prefix, and nothing is removed from the
+        // source array: Compact below deep-clones every value it keeps, so the original nodes are
+        // never re-parented and detaching them buys nothing. An entry joins the first group it
+        // matches, so overlapping prefixes ("Index,Indexing") cannot report the same setting twice.
+        var groups = wanted
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(prefix => (Prefix: prefix, Entries: new List<JsonNode?>()))
+            .ToList();
+
+        foreach (var entry in entries)
+            foreach (var group in groups)
+                if (KeysOf(entry).Any(k => k.StartsWith(group.Prefix, StringComparison.OrdinalIgnoreCase)))
+                {
+                    group.Entries.Add(entry);
+                    break;
+                }
+
         // The "only what is set" rule applies within each requested prefix. Across the whole result
         // it would drop any prefix that is at its defaults, silently and without saying so.
         var matched = new List<JsonNode?>();
         var configured = new List<JsonNode?>();
-        foreach (var want in wanted)
+        foreach (var (_, groupEntries) in groups)
         {
-            var group = new List<JsonNode?>();
-            foreach (var entry in entries.ToArray())
-                if (KeysOf(entry).Any(k => k.StartsWith(want, StringComparison.OrdinalIgnoreCase)))
-                {
-                    entries.Remove(entry);
-                    group.Add(entry);
-                }
-
-            var set = group.Where(e => e?["ServerValues"] is JsonObject { Count: > 0 }).ToList();
+            var set = groupEntries.Where(e => e?["ServerValues"] is JsonObject { Count: > 0 }).ToList();
             configured.AddRange(set);
-            matched.AddRange(set.Count > 0 ? set : group);
+            matched.AddRange(set.Count > 0 ? set : groupEntries);
         }
 
         // Description, Type, SizeUnit and AvailableValues are most of an entry and never change.
@@ -121,11 +139,8 @@ public sealed partial class RavenDbAdminClient
             return o;
         }
 
-        // Selected per prefix above; filtering again here would undo that.
-        var chosen = matched;
-
         const int MaxSettingsEntries = 100;
-        var page = chosen.Take(MaxSettingsEntries).Select(Compact).ToArray();
+        var page = matched.Take(MaxSettingsEntries).Select(Compact).ToArray();
 
         return ToJson(new
         {
@@ -134,7 +149,7 @@ public sealed partial class RavenDbAdminClient
             matched = matched.Count,
             configured = configured.Count,
             returned = page.Length,
-            truncated = chosen.Count > MaxSettingsEntries,
+            truncated = matched.Count > MaxSettingsEntries,
             note = configured.Count > 0
                 ? "Showing settings with a value set on the server. Metadata (description, type, bounds) omitted."
                 : "No setting under this prefix is overridden; showing defaults. Metadata omitted.",
