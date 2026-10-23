@@ -4,6 +4,8 @@ Read-only RQL over this server. Progressive path: **this index → `skill://rave
 
 **The keywords below tell you what EXISTS, not the syntax. For anything you use, open its reference and follow the exact syntax there. Do not write RQL from memory; assume your recall is stale. Features above the 6.2 baseline are marked `(7.0+)` or `(7.1+)` where they are documented; this cluster is v{VERSION}.**
 
+Don't know the document shape yet? Run `from <Collection> limit 1` through `run_query` first to see the real field names before you filter on them.
+
 ## Index: find your keyword, then read that reference
 | You want… (keywords) | Read |
 |---|---|
