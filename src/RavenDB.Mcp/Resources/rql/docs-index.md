@@ -1,6 +1,6 @@
 # RavenDB {VERSION} — official RQL documentation
 
-Version-correct, authoritative docs for a **{VERSION}** cluster. Fetch these when a query needs syntax the derived resources don't cover, or when version behavior differs. (Paths verified on 7.1; slugs are stable across 6.2/7.1/7.2. `vector.search` is 7.x+ only.)
+Version-correct, authoritative docs for a **{VERSION}** cluster. Fetch these when a query needs syntax the skill://ravendb references don't cover, or when version behavior differs. (Paths verified on 7.1; slugs are stable across 6.2/7.1/7.2. `vector.search` is 7.x+ only.)
 
 ## Core RQL
 - [What is RQL](https://docs.ravendb.net/{VERSION}/client-api/session/querying/what-is-rql) — from / where / group by / select / include / load, operators and functions

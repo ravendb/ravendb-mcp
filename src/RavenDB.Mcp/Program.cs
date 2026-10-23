@@ -9,6 +9,7 @@ using ModelContextProtocol.Server;
 using Raven.Client.Documents;
 using RavenDB.Mcp.Configuration;
 using RavenDB.Mcp.RavenDB;
+using RavenDB.Mcp.Resources;
 
 var configPath = GetConfigPath(args);
 var builder = Host.CreateApplicationBuilder(args);
@@ -54,7 +55,8 @@ builder.Services
         await next(context, cancellationToken);
     }))
     .WithToolsFromAssembly()
-    .WithResourcesFromAssembly();
+    .WithResourcesFromAssembly()
+    .WithResources(SkillResources.Create());
 
 var app = builder.Build();
 

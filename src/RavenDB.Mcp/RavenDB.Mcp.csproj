@@ -28,9 +28,18 @@
     <InternalsVisibleTo Include="RavenDB.Mcp.Tests" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <SkillDir>$(MSBuildThisFileDirectory)../../external/skills/skills/ravendb/</SkillDir>
+  </PropertyGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Resources/rql/*.md" />
+    <EmbeddedResource Include="$(SkillDir)**/*.md" LogicalName="skill/ravendb/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
+
+  <Target Name="RequireSkillSubmodule" BeforeTargets="BeforeBuild" Condition="!Exists('$(SkillDir)SKILL.md')">
+    <Error Text="The ravendb skill is missing at $(SkillDir). Run: git submodule update --init" />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />

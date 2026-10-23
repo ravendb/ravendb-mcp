@@ -216,7 +216,7 @@ public sealed partial class RavenDbAdminClient
             error = JsonSerializer.SerializeToElement(new
             {
                 Error = message,
-                Hint = "Don't retry from memory — read rql://cheatsheet for clause order/syntax, or rql://index to find the right feature resource."
+                Hint = "Don't retry from memory: read skill://ravendb/references/rql-cheatsheet.md for clause order/syntax, or rql://index to find the right feature reference."
             });
             return true;
         }
