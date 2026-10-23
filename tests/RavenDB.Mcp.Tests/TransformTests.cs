@@ -76,7 +76,7 @@ public sealed class TransformTests
         if (expected)
         {
             Assert.Equal("boom", error.GetProperty("Error").GetString());
-            Assert.Contains("rql://", error.GetProperty("Hint").GetString());
+            Assert.Contains("skill://ravendb/references/rql-cheatsheet.md", error.GetProperty("Hint").GetString());
         }
     }
 

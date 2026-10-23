@@ -59,7 +59,7 @@ Then ask the agent *“list my RavenDB databases.”* Any of these can use `dnx 
 **Developer experience**
 - One-line install with `npx`, `dnx`, or a prebuilt binary.
 - 21 tools, one per subject area, each with parameters to select what you need (reduced from 74).
-- Version-aware RQL docs are served as `rql://` resources; a failed query returns the parser error and where to look.
+- The [ravendb agent skill](https://github.com/ravendb/skills) ships as `skill://ravendb/` resources; a failed query returns the parser error and where to look.
 
 **Safety**
 - Read-only: no write, patch, or delete tools, and mutating queries are rejected.
