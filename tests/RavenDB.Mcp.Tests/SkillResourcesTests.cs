@@ -35,7 +35,7 @@ public sealed class SkillResourcesTests
     {
         Assert.True(RavenDbAdminClient.TryQueryError(500, """{ "Type": "Raven.Client.Exceptions.InvalidQueryException", "Message": "boom" }""", out var error));
         var runQuery = typeof(DocumentDataTools).GetMethod(nameof(DocumentDataTools.RunQuery))!.GetCustomAttribute<DescriptionAttribute>()!.Description;
-        var pointers = string.Join('\n', RqlResources.Read("index.md"), error.GetProperty("Hint").GetString(), runQuery);
+        var pointers = string.Join('\n', error.GetProperty("Hint").GetString(), runQuery);
 
         var uris = Regex.Matches(pointers, @"skill://[\w/.-]+\.md")
             .Select(match => match.Value)

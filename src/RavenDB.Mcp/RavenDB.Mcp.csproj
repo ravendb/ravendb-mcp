@@ -33,7 +33,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources/rql/*.md" />
     <EmbeddedResource Include="$(SkillDir)**/*.md" LogicalName="skill/ravendb/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 

@@ -55,7 +55,6 @@ builder.Services
         await next(context, cancellationToken);
     }))
     .WithToolsFromAssembly()
-    .WithResourcesFromAssembly()
     .WithResources(SkillResources.Create());
 
 var app = builder.Build();
