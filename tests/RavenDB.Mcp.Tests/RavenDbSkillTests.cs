@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
+using ModelContextProtocol.Extensions.Skills;
 using RavenDB.Mcp.RavenDB;
 using RavenDB.Mcp.Resources;
 using RavenDB.Mcp.Tools;
@@ -8,26 +10,32 @@ using RavenDB.Mcp.Tools;
 namespace RavenDB.Mcp.Tests;
 
 // The skill is vendored from github.com/ravendb/skills; these catch a submodule bump that moves a file we point agents at.
-public sealed class SkillResourcesTests
+public sealed class RavenDbSkillTests
 {
+    private static readonly Skill Entry = RavenDbSkill.Create().Skill.ProtocolSkill!;
+
+    private static string[] ManifestUris => Entry.Resources.Entries!.Select(entry => entry.Uri).ToArray();
+
     [Fact]
-    public void ServesTheSkillWithItsFrontmatter()
+    public void PublishesTheSkillWithAFullManifest()
     {
-        var skill = SkillResources.Files["skill://ravendb/SKILL.md"];
-        Assert.StartsWith("---", skill);
-        Assert.Contains("name: ravendb", skill);
+        Assert.Equal("skill://ravendb/SKILL.md", Entry.Uri);
+        Assert.Equal("ravendb", Entry.Name);
+        Assert.False(string.IsNullOrWhiteSpace(Entry.Description));
+        Assert.Equal(RavenDbSkill.Files.Count, ManifestUris.Length);
     }
 
     [Fact]
     public void ServesEveryReferenceSkillMdRoutesTo()
     {
-        var paths = Regex.Matches(SkillResources.Files["skill://ravendb/SKILL.md"], @"references/[\w/.-]+\.md")
+        var skillMd = Encoding.UTF8.GetString(RavenDbSkill.Files.Single(file => file.Path == "SKILL.md").Content.Span);
+        var paths = Regex.Matches(skillMd, @"references/[\w/.-]+\.md")
             .Select(match => match.Value)
             .Distinct()
             .ToArray();
 
         Assert.NotEmpty(paths);
-        Assert.All(paths, path => Assert.Contains("skill://ravendb/" + path, SkillResources.Files.Keys));
+        Assert.All(paths, path => Assert.Contains("skill://ravendb/" + path, ManifestUris));
     }
 
     [Fact]
@@ -43,6 +51,6 @@ public sealed class SkillResourcesTests
             .ToArray();
 
         Assert.NotEmpty(uris);
-        Assert.All(uris, uri => Assert.Contains(uri, SkillResources.Files.Keys));
+        Assert.All(uris, uri => Assert.Contains(uri, ManifestUris));
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ModelContextProtocol.Extensions.Skills;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using Raven.Client.Documents;
@@ -55,7 +56,7 @@ builder.Services
         await next(context, cancellationToken);
     }))
     .WithToolsFromAssembly()
-    .WithResources(SkillResources.Create());
+    .WithSkillPackages([RavenDbSkill.Create()]);
 
 var app = builder.Build();
 
