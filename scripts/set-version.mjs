@@ -2,6 +2,7 @@
 // Usage: node scripts/set-version.mjs 1.0.0
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 const next = process.argv[2];
 if (!next || !/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(next)) {
@@ -27,6 +28,9 @@ const edits = [
   ['npm/package.json', new RegExp(`"${cur}"`, 'g'), `"${next}"`],
   ['INSTALL.md', new RegExp(`(RavenDB\\.Mcp@)${cur}`, 'g'), `$1${next}`],
   ['mcpb/manifest.json', new RegExp(`"${cur}"`, 'g'), `"${next}"`],
+  // Drives the `/plugin install` path the README recommends, so a stale version here ships a
+  // plugin pointing at the previous release.
+  ['.claude-plugin/plugin.json', new RegExp(`"${cur}"`, 'g'), `"${next}"`],
 ];
 
 let total = 0;
@@ -42,4 +46,30 @@ for (const [path, re, repl] of edits) {
   console.log(`  ${path}: ${count} occurrence(s)`);
 }
 
-console.log(`\n${current} -> ${next}  (${total} fields updated). Review the diff, then commit.`);
+console.log(`\n${current} -> ${next}  (${total} fields updated).`);
+
+// The list above is hand-maintained, so it goes stale the moment someone adds a manifest that
+// carries a version. `.claude-plugin/plugin.json` sat outside it for four releases and only stayed
+// correct because it happened to get edited by hand. Sweep the tracked files afterwards and name
+// anything still on the old version, so the next omission is loud instead of silent.
+const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' }).split('\n').filter(Boolean);
+const stale = tracked.filter((path) => {
+  if (path === 'scripts/set-version.mjs' || !existsSync(path)) return false;
+  let text;
+  try {
+    text = readFileSync(path, 'utf8');
+  } catch {
+    return false; // binary or unreadable, nothing to stamp
+  }
+  return text.includes(current);
+});
+
+if (stale.length > 0) {
+  console.error(`\nStill on ${current}:`);
+  for (const path of stale) console.error(`  ${path}`);
+  console.error(`\nEither add these to the edits list above, or confirm the match is a different
+version that happens to read the same. Nothing is committed either way.`);
+  process.exit(1);
+}
+
+console.log('No tracked file is left on the old version. Review the diff, then commit.');
