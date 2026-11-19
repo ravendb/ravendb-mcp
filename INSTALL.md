@@ -152,7 +152,7 @@ Create `.vscode/mcp.json`:
 For developing the server itself. Publish a self-contained binary:
 
 ```powershell
-git clone https://github.com/ravendb/ravendb-mcp.git
+git clone --recurse-submodules https://github.com/ravendb/ravendb-mcp.git
 cd ravendb-mcp
 dotnet publish src/RavenDB.Mcp/RavenDB.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/win-x64
 ```

@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- The MCP Skills extension package is marked experimental. -->
+    <NoWarn>$(NoWarn);MCPEXP005</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

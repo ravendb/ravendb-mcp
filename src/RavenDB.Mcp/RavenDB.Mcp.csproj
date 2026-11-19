@@ -7,6 +7,8 @@
     <Nullable>enable</Nullable>
     <!-- Bundle native libraries (e.g. libzstd) into the single-file exe so an exe-only copy (npm) can load them. -->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- The MCP Skills extension package is marked experimental. -->
+    <NoWarn>$(NoWarn);MCPEXP005</NoWarn>
     <AssemblyName>ravendb-mcp</AssemblyName>
     <PackageId>RavenDB.Mcp</PackageId>
     <Version>1.1.0</Version>
@@ -28,13 +30,22 @@
     <InternalsVisibleTo Include="RavenDB.Mcp.Tests" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <SkillDir>$(MSBuildThisFileDirectory)../../external/skills/skills/ravendb/</SkillDir>
+  </PropertyGroup>
+
   <ItemGroup>
-    <EmbeddedResource Include="Resources/rql/*.md" />
+    <EmbeddedResource Include="$(SkillDir)**/*.md" LogicalName="skill/ravendb/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
+
+  <Target Name="RequireSkillSubmodule" BeforeTargets="BeforeBuild" Condition="!Exists('$(SkillDir)SKILL.md')">
+    <Error Text="The ravendb skill is missing at $(SkillDir). Run: git submodule update --init" />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
-    <PackageReference Include="ModelContextProtocol" Version="1.4.1" />
+    <PackageReference Include="ModelContextProtocol" Version="2.4.0" />
+    <PackageReference Include="ModelContextProtocol.Extensions.Skills" Version="2.4.0" />
     <PackageReference Include="RavenDB.Client" Version="7.2.4" />
   </ItemGroup>
 

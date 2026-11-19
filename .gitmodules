@@ -1,0 +1,3 @@
+[submodule "external/skills"]
+	path = external/skills
+	url = https://github.com/ravendb/skills.git

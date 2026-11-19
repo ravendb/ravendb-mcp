@@ -4,11 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ModelContextProtocol.Extensions.Skills;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using Raven.Client.Documents;
 using RavenDB.Mcp.Configuration;
 using RavenDB.Mcp.RavenDB;
+using RavenDB.Mcp.Resources;
 
 var configPath = GetConfigPath(args);
 var builder = Host.CreateApplicationBuilder(args);
@@ -54,7 +56,7 @@ builder.Services
         await next(context, cancellationToken);
     }))
     .WithToolsFromAssembly()
-    .WithResourcesFromAssembly();
+    .WithSkillPackages([RavenDbSkill.Create()]);
 
 var app = builder.Build();
 
