@@ -46,7 +46,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
     <PackageReference Include="ModelContextProtocol" Version="2.4.0" />
     <PackageReference Include="ModelContextProtocol.Extensions.Skills" Version="2.4.0" />
-    <PackageReference Include="RavenDB.Client" Version="7.2.7" />
+    <PackageReference Include="RavenDB.Client" Version="7.2.8" />
   </ItemGroup>
 
   <ItemGroup>
